@@ -3,12 +3,12 @@ package com.ostrowski.dieroller;
 
 import static com.ostrowski.graphics.World3D.UP_VECTOR;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.ostrowski.graphics.Model;
 import com.ostrowski.graphics.model.ColoredFace;
 import com.ostrowski.graphics.model.Face;
-import com.ostrowski.graphics.model.Matrix3x3;
 import com.ostrowski.graphics.model.ObjData;
 import com.ostrowski.graphics.model.Tuple3;
 
@@ -17,18 +17,20 @@ public class Die extends Model
    private final int          _resultRGB = 0xA03030; // default results color is redish
    private final int          _results;
    private final Tuple3       _targetOrientation;
-   private final List<Tuple3> _directions;
-   protected     RollState    _rollState = RollState.DROPPING;
+   private final List<Tuple3> _directions = new ArrayList<>();
+   protected     boolean      moving      = true;
 
    public Die(int sides, ObjData data, float scale, int results, Integer baseRGB, List<Tuple3> directions) {
       super(data, scale, baseRGB);
       _results = results;
-      _directions = directions;
-
-      // override the default direction with the first direction
-      if ((_directions != null) && (!_directions.isEmpty())) {
-         _velocity = _directions.remove(0);
+      if (directions != null) {
+         _directions.addAll(directions);
+         // override the default direction with the first direction
+         if ((_directions != null) && (!_directions.isEmpty())) {
+            _frame = _frame.setVelocity(_directions.remove(0));
+         }
       }
+
 
       Face face = _data.getFace(_results - 1);
       Tuple3 normal = face.getCommonNormal();
@@ -38,119 +40,108 @@ public class Die extends Model
 
       _targetOrientation = normal;
       if (sides == 20) {
-         _velocity.add(new Tuple3(10, -40, 0));
+         _frame = _frame.setVelocity(_frame._velocity.add(new Tuple3(10, -40, 0)));
       }
-
       // Orient the die so that it starts out with the results face up
-      float rotationInDegrees = (float) Math.toDegrees(Math.acos(_targetOrientation.dotProduct(UP_VECTOR)));
-      Tuple3 rotationalAxis = _targetOrientation.crossProduct(UP_VECTOR).unitVector();
-      Matrix3x3 rotationalMatrix = Matrix3x3.getRotationalTransformationAboutVector(rotationalAxis, rotationInDegrees);
-      _orientationTransform = rotationalMatrix.multiply(_orientationTransform);
+      _frame = _frame.setUp(_targetOrientation);
    }
 
    @Override
    public void update(float elapsedTimeInSeconds, Tuple3 acceleration, float floorZvalue) {
-      if (_rollState == RollState.STOPPED) {
+      if (!moving) {
          return;
       }
       super.update(elapsedTimeInSeconds, acceleration, floorZvalue);
    }
 
+   int bounceCount = 0;
    @Override
    protected void bounce(Tuple3 bouncePoint, Tuple3 positionedCenterMass, Tuple3 acceleration, float floorZvalue) {
       // If we are already moving upwards, this is still the previous bounce.
-      if (_velocity.getZ() > 0) {
+      if (_frame._velocity.getZ() > 0) {
          return;
       }
 
-      // TODO: use the vectors in the _directions list for each bounce.
-//      if ((_directions != null) && (!_directions.isEmpty())) {
-//         _velocity = _directions.remove(0);
-//      }
+      bounceCount++;
 
-      float bounceDepth = floorZvalue - bouncePoint.getZ();
-      _location = _location.add(0, 0, (1.5f * bounceDepth));
-      Tuple3 pointToCenter = positionedCenterMass.subtract(bouncePoint);
-      _rollState = _rollState.getNextState();
-      Tuple3 targetsCurrentOrientation = _targetOrientation.applyTransformation(_orientationTransform);
-      float rotationInDegrees = (float) Math.toDegrees(Math.acos(targetsCurrentOrientation.unitVector().dotProduct(UP_VECTOR)));
-      if (_rollState == RollState.STOPPED) {
-         _rotationalAxis = targetsCurrentOrientation.crossProduct(UP_VECTOR).unitVector();
-         Matrix3x3 rotationalMatrix = Matrix3x3.getRotationalTransformationAboutVector(_rotationalAxis, rotationInDegrees);
-         _orientationTransform = rotationalMatrix.multiply(_orientationTransform);
-
-         _velocity = new Tuple3(0,0,0);
-         _rotationalAxis = new Tuple3(0,0,0);
-
-         float lowestZ = 0;
-         for (Face face : _data.getFaces()) {
-            Tuple3 faceCenter = face.getVertexCenter();
-            Tuple3 positionedVertex = faceCenter.applyTransformation(_orientationTransform).add(_location);
-
-            if (lowestZ > positionedVertex.getZ()) {
-               lowestZ = positionedVertex.getZ();
+      List<Tuple3> pointsBelowFloor = new ArrayList<>();
+      Tuple3 centerMassBelowFloor = new Tuple3(0,0,0);
+      boolean anyFaceBelowFloor = false;
+      for (Face face : _data.getFaces()) {
+         boolean thisFaceBelowFloor = true;
+         for (int v=0 ; v<face._vertexCount ; v++) {
+            Tuple3 vertex = face.getVertex(v);
+            //Tuple3 positionedVertex = vertex.applyTransformation(_orientationTransform).add(_location);
+            Tuple3 positionedVertex = _frame.positionVertex(vertex);
+            if (positionedVertex.getZ() < (floorZvalue + 10)) {
+               pointsBelowFloor.add(positionedVertex);
+               centerMassBelowFloor = centerMassBelowFloor.add(positionedVertex);
+            }
+            else {
+               thisFaceBelowFloor = false;
             }
          }
-         _location = _location.add(0, 0, floorZvalue - lowestZ);
-         return;
-      }
-
-      if ((_rollState == RollState.LEVELING) || (_rollState == RollState.BOUNCE_4)) {
-         _location = _location.add(0, 0, bounceDepth);
-         _rotationalAxis = targetsCurrentOrientation.crossProduct(UP_VECTOR).unitVector();
-
-         _velocity = new Tuple3(_velocity.getX() *  0.25f,
-                                _velocity.getY() *  0.25f,
-                                (float)(Math.max((_velocity.getZ() * -0.1f), 0.3)));
-         if (_rollState == RollState.BOUNCE_4) {
-            _velocity = new Tuple3(  5,  5,  10);
+         if (thisFaceBelowFloor) {
+            anyFaceBelowFloor = true;
          }
-         float timeToBounce = Math.abs(_velocity.getZ() / acceleration.getZ()) * 2.0f;
-
-         float degreePerSeconds = rotationInDegrees / timeToBounce;
-         // set the rotational speed:
-         System.out.println("Leveling: axis=" + _rotationalAxis + ", angle=" + rotationInDegrees + ", timeToBounce=" + timeToBounce);
-         _rotationalAxis = _rotationalAxis.multiply(degreePerSeconds);
-         return;
       }
-      switch (_rollState) {
-         case BOUNCE_1:  _velocity = new Tuple3( 40, 50, 300);  _rotationalAxis = new Tuple3(-500,  60, 150); return;
-         case BOUNCE_2:  _velocity = new Tuple3(-20, 10, 100);  _rotationalAxis = new Tuple3(-300,  40, 100); return;
-         case BOUNCE_3:  _velocity = new Tuple3(-10,-10,  30);  _rotationalAxis = new Tuple3(-250,  60, -50); return;
-         case BOUNCE_4:  _velocity = new Tuple3(  5,  5,  10);  _rotationalAxis = new Tuple3( 100, 120, -20); return;
-         default:
-      }
-      _velocity = new Tuple3((_velocity.getX() *  0.5f) + ((pointToCenter.getX() * 3.0f)/3f),
-                             (_velocity.getY() *  0.5f) + ((pointToCenter.getY() * 3.0f)/3f),
-                             (_velocity.getZ() * -0.4f) + ((pointToCenter.getZ() * 0.5f)/3f));
+      centerMassBelowFloor = centerMassBelowFloor.divide(pointsBelowFloor.size());
 
-      if ((_rollState == RollState.BOUNCE_1) || (_rollState == RollState.BOUNCE_2)) {
-         _rotationalAxis = _rotationalAxis.add(pointToCenter.crossProduct(UP_VECTOR).unitVector());
-         return;
+      // Use the vectors in the _directions list for each bounce.
+      if ((_directions != null) && (!_directions.isEmpty())) {
+         _frame = _frame.setVelocity(_directions.remove(0));
       }
 
-      float timeToBounce = Math.abs(_velocity.getZ() / acceleration.getZ()) * 2.0f;
-      float degreePerSeconds = rotationInDegrees / timeToBounce;
-//      while (Math.abs(rotationInDegrees) > 360f) {
-//         rotationInDegrees -= 360 * Math.signum(rotationInDegrees);
-//         degreePerSeconds = rotationInDegrees / timeToBounce;
+      // Check if we have stopped moving
+      if (Math.abs(_frame._velocity.getZ()) < bounceCount * 5) {
+         if (anyFaceBelowFloor) {
+            moving = false;
+            return;
+         }
+      }
+
+      float bounceDepth = floorZvalue - centerMassBelowFloor.getZ();
+      _frame = _frame.addLocation(new Tuple3(0, 0, (1.5f * bounceDepth)));
+
+      float dampeningFactor = 0.6f;
+      Tuple3 pointToCenter = positionedCenterMass.subtract(centerMassBelowFloor);
+      Tuple3 newTorque = pointToCenter.crossProduct(UP_VECTOR).multiply(0-dampeningFactor);
+      //if (anyFaceBelowFloor)
+         //newTorque = newTorque.multiply(5);
+
+      double percentBounce = pointToCenter.unitVector().dotProduct(UP_VECTOR);
+
+      Tuple3 newVelocity = new Tuple3((_frame._velocity.getX() * dampeningFactor),// + (pointToCenter.getX() * 3.0f) / 2f),
+                                      (_frame._velocity.getY() * dampeningFactor),// + (pointToCenter.getY() * 3.0f) / 2f),
+                                      (_frame._velocity.getZ() * (0-dampeningFactor) * (float)percentBounce));
+      _frame = _frame.setVelocity(newVelocity);
+      Tuple3 newRotationalAxis = _frame._rotationalAxis.multiply(dampeningFactor).add(newTorque);
+      _frame = _frame.setRotationalAxis(newRotationalAxis);
+
+      return;
+
+//      float timeToBounce = Math.abs(_frame._velocity.getZ() / acceleration.getZ()) * 2.0f;
+//      float degreePerSeconds = rotationInDegrees / timeToBounce;
+////      while (Math.abs(rotationInDegrees) > 360f) {
+////         rotationInDegrees -= 360 * Math.signum(rotationInDegrees);
+////         degreePerSeconds = rotationInDegrees / timeToBounce;
+////      }
+//      // set the rotational speed:
+//      if (Math.abs(degreePerSeconds) < Math.abs(_frame._rotationalAxis.magnitude())) {
+//         // set the rotational speed:
+//         degreePerSeconds = (float) Math.toDegrees(Math.acos(pointToCenter.unitVector().dotProduct(UP_VECTOR)));
 //      }
-      // set the rotational speed:
-      if (Math.abs(degreePerSeconds) < Math.abs(_rotationalAxis.magnitude())) {
-         // set the rotational speed:
-         degreePerSeconds = (float) Math.toDegrees(Math.acos(pointToCenter.unitVector().dotProduct(UP_VECTOR)));
-      }
-      _rotationalAxis = targetsCurrentOrientation.crossProduct(UP_VECTOR).unitVector().multiply(degreePerSeconds);
+//      _frame = _frame.setRotationalAxis(targetsCurrentOrientation.crossProduct(UP_VECTOR).unitVector().multiply(degreePerSeconds));
    }
 
    @Override
    public List<ColoredFace> getColoredFaces() {
       List<ColoredFace> faces = super.getColoredFaces();
       // augment the results face by shading in a contrasting color
-      if (_rollState == RollState.STOPPED) {
+      if (!moving) {
          for (ColoredFace face : faces) {
             float upness = face.getCommonNormal().dotProduct(UP_VECTOR);
-            if (upness > 0.99f) {
+            if (upness > 0.98f) {
                face.setColor(_resultRGB);
                break;
             }

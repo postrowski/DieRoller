@@ -13,11 +13,8 @@ public class Model
 {
    protected final ObjData   _data;
    protected final float     _scale;
-   protected       Tuple3    _location             = new Tuple3(600, 300, 100);
-   protected       Tuple3    _velocity             = new Tuple3(0, 0, -10);   // per second
-   protected       Tuple3    _rotationalAxis       = new Tuple3(-50, 60, 30);   // unit vector is axis, magnitude is degrees per second
+   protected       Frame     _frame;
    protected       int       _baseRGB              = 0x3030FF;                  // default color is light blue
-   protected       Matrix3x3 _orientationTransform = Matrix3x3.IdentityMatrix();
 
    public Model(ObjData data, float scale, Integer baseRGB) {
       _data     = data;
@@ -25,19 +22,19 @@ public class Model
       if (baseRGB != null) {
          _baseRGB = baseRGB;
       }
+      _frame = new Frame(new Tuple3(600, 300, 300),  // location
+                         new Tuple3(0, 30, 420),    // velocity, pixels per second
+                         //new Tuple3(-350, 460, 50));   // unit vector is axis, magnitude is degrees per second
+                         new Tuple3((float)(Math.random() * 1000f -500f),
+                                    (float)(Math.random() * 1000f -500f),
+                                    (float)(Math.random() * 1000f -500f)));   // unit vector is axis, magnitude is degrees per second
+
       _data.scale(scale, scale, scale);
    }
 
    public void update(float elapsedTimeInSeconds, Tuple3 acceleration, float floorZvalue) {
 
-      // Finally, update the current velocity by applying the gravity:
-      Tuple3 initialVelocity = _velocity;
-      _velocity = _velocity.add(acceleration.multiply(elapsedTimeInSeconds));
-      Tuple3 averageVelocity = initialVelocity.add(_velocity).divide(2.0f);
-      _location = _location.add(averageVelocity.multiply(elapsedTimeInSeconds));
-
-      System.out.println("location = " + _location);
-      adjustRotation(elapsedTimeInSeconds);
+      _frame = _frame.update(elapsedTimeInSeconds, acceleration);
 
       // Check if a corner hit the floor by iterating through each face, and each vertex in each face,
       // applying the current rotation matrix to each point, and seeing if it's lower than the floor.
@@ -48,7 +45,8 @@ public class Model
          centerMass = centerMass.add(face.getVertexCenter());
          for (int v=0 ; v<face._vertexCount ; v++) {
             Tuple3 vertex = face.getVertex(v);
-            Tuple3 positionedVertex = vertex.applyTransformation(_orientationTransform).add(_location);
+            //Tuple3 positionedVertex = vertex.applyTransformation(_orientationTransform).add(_location);
+            Tuple3 positionedVertex = _frame.positionVertex(vertex);
             if (positionedVertex.getZ() < floorZvalue) {
                if ((lowestZ == null) || (lowestZ > positionedVertex.getZ())) {
                   positonedBouncePoint = positionedVertex;
@@ -58,7 +56,7 @@ public class Model
          }
       }
       centerMass = centerMass.divide(_data.getFaceCount());
-      Tuple3 positionedCenterMass = centerMass.add(_location);
+      Tuple3 positionedCenterMass = _frame.positionVertex(centerMass);
 
       if (positonedBouncePoint != null) {
          bounce(positonedBouncePoint, positionedCenterMass, acceleration, floorZvalue);
@@ -79,19 +77,8 @@ public class Model
       return new Tuple3(angleX, angleY, 0.0f);
    }
 
-   private synchronized void adjustRotation(double elapsedTimeInSeconds) {
-      double rotationInDegrees = _rotationalAxis.magnitude() * elapsedTimeInSeconds;
-      System.out.println("rotationInDegrees = " + rotationInDegrees);
-      if (rotationInDegrees != 0) {
-         Matrix3x3 rotationalMatrix = Matrix3x3.getRotationalTransformationAboutVector(_rotationalAxis, rotationInDegrees);
-         _orientationTransform = rotationalMatrix.multiply(_orientationTransform);
-      }
-   }
-
    protected void bounce(Tuple3 bouncePoint, Tuple3 positionedCenterMass, Tuple3 acceleration, float floorZvalue) {
-      _velocity = new Tuple3(_velocity.getX() *  0.90f,
-                             _velocity.getY() *  0.90f,
-                             _velocity.getZ() * -0.75f);
+      _frame = _frame.bounce(bouncePoint, positionedCenterMass, acceleration, floorZvalue);
    }
 
    /*
@@ -101,8 +88,8 @@ public class Model
       List<ColoredFace> faces = new ArrayList<>();
       for (Face face : _data.getFaces()) {
          ColoredFace newFace = new ColoredFace(face, _baseRGB);
-         newFace.applyTransformation(_orientationTransform);
-         newFace.move(_location);
+         newFace.applyTransformation(_frame._orientationTransform);
+         newFace.move(_frame._location);
          faces.add(newFace);
       }
       return faces;

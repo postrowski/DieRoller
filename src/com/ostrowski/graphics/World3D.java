@@ -23,7 +23,7 @@ import com.ostrowski.graphics.model.Tuple3;
 public class World3D
 {
    private final        List<Model>   _data                          = new ArrayList<>();
-   private final        Tuple3        _acceleration                  = new Tuple3(0, 0, -750);   // per seconds^2
+   private final        Tuple3        _acceleration                  = new Tuple3(0, 0, -1500);   // per seconds^2
    static final         Tuple3        _cameraPosition                = new Tuple3(0, 900, 900);   // the position of the camera
    final                Matrix3x3     _viewTransform                 = Matrix3x3./*IdentityMatrix();*/getRotationalTransformation(35, 0, 0); // in degrees
    private final static int           FOCAL_LENGTH                   = 2200;
@@ -72,7 +72,7 @@ public class World3D
 
       boolean debugging = false;
       if (debugging) {
-         elapsedTimeInSeconds = .1f;
+         elapsedTimeInSeconds /= 10f;
       }
 
       for (Model model : _data) {

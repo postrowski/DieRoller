@@ -4,9 +4,12 @@ package com.ostrowski;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.security.InvalidParameterException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import com.ostrowski.graphics.model.Tuple3;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.events.PaintListener;
@@ -92,7 +95,12 @@ public class DieShell extends Thread implements PaintListener
       }
       _world = new World3D(TEXTURE);
       _world.add(new Die(sides, DIE_MAP.get(sides).clone(), scale, results, baseRgb, null));
-      _world.add(new Die(6, DIE_MAP.get(6).clone(), scale, 3, baseRgb, null));
+      List<Tuple3> directions = new ArrayList<>();
+      directions.add(new Tuple3(61,42,307));// per second
+      _world.add(new Die(12, DIE_MAP.get(99).clone(), scale, 3, baseRgb, directions));
+      directions.clear();
+      directions.add(new Tuple3(-61,-42,307));// per second
+      _world.add(new Die(4, DIE_MAP.get(4).clone(), scale, 3, baseRgb, directions));
 
       _shell.setSize(100, 100);
       _shell.open();
@@ -183,7 +191,7 @@ public class DieShell extends Thread implements PaintListener
 //               // Add 10 to the image size to reduce the chance it needs to be recreated
 //               width += 10; height += 10;
 
-               System.out.println("creating image (" + width + ", " + height + ")");
+//               System.out.println("creating image (" + width + ", " + height + ")");
                _image = new Image(display, width, height);
 //               _doubleBufferCanvas.setData("double-buffer-image", image);
             }

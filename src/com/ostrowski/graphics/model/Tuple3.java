@@ -94,7 +94,9 @@ public class Tuple3 implements Cloneable {
    }
 
    public Tuple3 crossProduct(Tuple3 other) {
-      return new Tuple3((_y*other._z) - (_z*other._y), (_z*other._x) - (_x*other._z), (_x*other._y) - (_y*other._x));
+      return new Tuple3((_y*other._z) - (_z*other._y),
+                        (_z*other._x) - (_x*other._z),
+                        (_x*other._y) - (_y*other._x));
    }
    public double magnitude() {
       return Math.sqrt(this.dotProduct(this));
