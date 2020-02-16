@@ -29,33 +29,21 @@ public class Frame {
       Tuple3 newVelocity = _velocity.add(acceleration.multiply(elapsedTimeInSeconds));
       Tuple3 averageVelocity = initialVelocity.add(newVelocity).divide(2.0f);
       Tuple3 newLocation = _location.add(averageVelocity.multiply(elapsedTimeInSeconds));
-      Matrix3x3 newOrientationTransform = adjustRotation(elapsedTimeInSeconds);
+      Matrix3x3 newOrientationTransform = _orientationTransform;
+      double rotationInDegrees = _rotationalAxis.magnitude() * elapsedTimeInSeconds;
+      System.out.println("rotationInDegrees = " + rotationInDegrees);
+      if (rotationInDegrees != 0) {
+         Matrix3x3 rotationalMatrix = Matrix3x3.getRotationalTransformationAboutVector(_rotationalAxis, rotationInDegrees);
+         newOrientationTransform = rotationalMatrix.multiply(_orientationTransform);
+      }
 
       System.out.println("location = " + newLocation);
       return new Frame(newLocation, newVelocity, _rotationalAxis, newOrientationTransform);
    }
 
-   private synchronized Matrix3x3 adjustRotation(double elapsedTimeInSeconds) {
-      double rotationInDegrees = _rotationalAxis.magnitude() * elapsedTimeInSeconds;
-      System.out.println("rotationInDegrees = " + rotationInDegrees);
-      if (rotationInDegrees != 0) {
-         Matrix3x3 rotationalMatrix = Matrix3x3.getRotationalTransformationAboutVector(_rotationalAxis, rotationInDegrees);
-         return rotationalMatrix.multiply(_orientationTransform);
-      }
-      return _orientationTransform;
-   }
-
    public Tuple3 positionVertex(Tuple3 vertex) {
       return vertex.applyTransformation(_orientationTransform).add(_location);
    }
-
-   protected Frame bounce(Tuple3 bouncePoint, Tuple3 positionedCenterMass, Tuple3 acceleration, float floorZvalue) {
-      Tuple3 newVelocity = new Tuple3(_velocity.getX() * 0.90f * (float) (Math.random() * 1.2 * Math.random()),
-                                      _velocity.getY() * 0.90f * (float) (Math.random() * 1.2 * Math.random()),
-                                      _velocity.getZ() * -0.75f);
-      return new Frame(_location, newVelocity, _rotationalAxis, _orientationTransform);
-   }
-
 
    public Frame setVelocity(Tuple3 velocity) {
       return new Frame(_location, velocity, _rotationalAxis, _orientationTransform);

@@ -94,13 +94,14 @@ public class DieShell extends Thread implements PaintListener
          results = (int)(Math.floor(Math.random() * sides));
       }
       _world = new World3D(TEXTURE);
-      _world.add(new Die(sides, DIE_MAP.get(sides).clone(), scale, results, baseRgb, null));
+      //_world.add(new Die(sides, DIE_MAP.get(sides).clone(), scale, results, baseRgb, null));
       List<Tuple3> directions = new ArrayList<>();
       directions.add(new Tuple3(61,42,307));// per second
-      _world.add(new Die(12, DIE_MAP.get(99).clone(), scale, 3, baseRgb, directions));
+      //_world.add(new Die(12, DIE_MAP.get(99).clone(), scale, 3, baseRgb, directions));
       directions.clear();
       directions.add(new Tuple3(-61,-42,307));// per second
-      _world.add(new Die(4, DIE_MAP.get(4).clone(), scale, 3, baseRgb, directions));
+      //_world.add(new Die(4, DIE_MAP.get(4).clone(), scale, 3, baseRgb, directions));
+      _world.add(new Die(6, DIE_MAP.get(6).clone(), scale, 3, baseRgb, directions));
 
       _shell.setSize(100, 100);
       _shell.open();

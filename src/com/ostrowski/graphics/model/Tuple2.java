@@ -6,7 +6,7 @@ package com.ostrowski.graphics.model;
  * represent a vertex or normal in 2D space or a texture coordinate
  *
  */
-public class Tuple2 implements Cloneable {
+public class Tuple2 implements Cloneable, Comparable<Tuple2> {
 	/** The x element in this tuple */
 	private final float _x;
 	/** The y element in this tuple */
@@ -76,5 +76,36 @@ public class Tuple2 implements Cloneable {
    @Override
    public Tuple2 clone() {
       return new Tuple2(_x, _y);
+   }
+
+   @Override
+   public boolean equals(Object o) {
+      if (o instanceof Tuple2) {
+         return compareTo((Tuple2) o) == 0;
+      }
+      return false;
+   }
+
+   @Override
+   public int compareTo(Tuple2 o) {
+      int comp;
+      comp = compareAxis(_x, o._x, o); if (comp != 0) return comp;
+      comp = compareAxis(_y, o._y, o); if (comp != 0) return comp;
+      return 0;
+   }
+
+   public int compareAxis(float thisAxis, float othersAxis, Tuple2 other) {
+      if (thisAxis == othersAxis) {
+         return 0;
+      }
+      // If any axis is different, we should return the comparison based on the
+      // magnitudes of the Tuple3s, rather than the individual axis'.
+      double thisMag = magnitude();
+      double otherMag = other.magnitude();
+      if (thisMag != otherMag) {
+         return Double.compare(thisMag, otherMag);
+      }
+      // If the magnitutes happen to be identical, compare the individual axis then:
+      return Float.compare(thisAxis, othersAxis);
    }
 }

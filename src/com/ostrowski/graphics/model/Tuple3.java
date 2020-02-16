@@ -8,7 +8,7 @@ import java.nio.FloatBuffer;
  * represent a vertex or normal in 3D space.
  *
  */
-public class Tuple3 implements Cloneable {
+public class Tuple3 implements Cloneable, Comparable<Tuple3> {
    static int NEXT_ID = 0;
    public final int objId = NEXT_ID++;
 	/** The x element in this tuple */
@@ -130,5 +130,36 @@ public class Tuple3 implements Cloneable {
    @Override
    public Tuple3 clone() {
       return new Tuple3(_x, _y, _z);
+   }
+
+   @Override
+   public boolean equals(Object o) {
+      if (o instanceof Tuple3) {
+         return compareTo((Tuple3) o) == 0;
+      }
+      return false;
+   }
+
+   @Override
+   public int compareTo(Tuple3 o) {
+      int comp;
+      comp = compareAxis(_x, o._x, o); if (comp != 0) return comp;
+      comp = compareAxis(_y, o._y, o); if (comp != 0) return comp;
+      comp = compareAxis(_z, o._z, o); if (comp != 0) return comp;
+      return 0;
+   }
+   public int compareAxis(float thisAxis, float othersAxis, Tuple3 other) {
+      if (thisAxis == othersAxis) {
+         return 0;
+      }
+      // If any axis is different, we should return the comparison based on the
+      // magnitudes of the Tuple3s, rather than the individual axis'.
+      double thisMag = magnitude();
+      double otherMag = other.magnitude();
+      if (thisMag != otherMag) {
+         return Double.compare(thisMag, otherMag);
+      }
+      // If the magnitutes happen to be identical, compare the individual axis then:
+      return Float.compare(thisAxis, othersAxis);
    }
 }

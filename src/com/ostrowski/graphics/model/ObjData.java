@@ -119,6 +119,11 @@ public class ObjData implements Cloneable
    public List<Face> getFaces() {
       return _faces;
    }
+
+   public List<Tuple3> getVerts() {
+      return _verts;
+   }
+
    /**
     * Get the number of faces found in the model file
     *

@@ -9,12 +9,16 @@ import com.ostrowski.graphics.model.Matrix3x3;
 import com.ostrowski.graphics.model.ObjData;
 import com.ostrowski.graphics.model.Tuple3;
 
+import static com.ostrowski.graphics.World3D.UP_VECTOR;
+
 public class Model
 {
-   protected final ObjData   _data;
-   protected final float     _scale;
-   protected       Frame     _frame;
-   protected       int       _baseRGB              = 0x3030FF;                  // default color is light blue
+   protected final ObjData _data;
+   protected final float   _scale;
+   protected       Frame   _frame;
+   protected       int     _baseRGB     = 0x3030FF;                  // default color is light blue
+   protected       boolean _moving      = true;
+   protected       Tuple3  _centerMass;
 
    public Model(ObjData data, float scale, Integer baseRGB) {
       _data     = data;
@@ -29,39 +33,138 @@ public class Model
                                     (float)(Math.random() * 1000f -500f),
                                     (float)(Math.random() * 1000f -500f)));   // unit vector is axis, magnitude is degrees per second
 
+      System.out.println("New object. rotationalAxis: " + _frame._rotationalAxis.toString());
       _data.scale(scale, scale, scale);
+      _centerMass = _data.getAveragePoint();
    }
 
-   public void update(float elapsedTimeInSeconds, Tuple3 acceleration, float floorZvalue) {
+   public void update(float elapsedTimeInSeconds, Tuple3 acceleration, float floorZValue) {
 
-      _frame = _frame.update(elapsedTimeInSeconds, acceleration);
+      if (!_moving) {
+         return;
+      }
+      Frame nextFrame = _frame.update(elapsedTimeInSeconds, acceleration);
 
       // Check if a corner hit the floor by iterating through each face, and each vertex in each face,
       // applying the current rotation matrix to each point, and seeing if it's lower than the floor.
-      Tuple3 positonedBouncePoint = null;
-      Tuple3 centerMass = new Tuple3(0,0,0);
-      Float lowestZ = null;
-      for (Face face : _data.getFaces()) {
-         centerMass = centerMass.add(face.getVertexCenter());
-         for (int v=0 ; v<face._vertexCount ; v++) {
-            Tuple3 vertex = face.getVertex(v);
-            //Tuple3 positionedVertex = vertex.applyTransformation(_orientationTransform).add(_location);
-            Tuple3 positionedVertex = _frame.positionVertex(vertex);
-            if (positionedVertex.getZ() < floorZvalue) {
-               if ((lowestZ == null) || (lowestZ > positionedVertex.getZ())) {
-                  positonedBouncePoint = positionedVertex;
-                  lowestZ = positionedVertex.getZ();
-               }
-            }
+
+      List<Tuple3> pointsBelowFloor = new ArrayList<>();
+      List<Tuple3> pointsNearFloor = new ArrayList<>();
+      Tuple3 centerMassBelowFloor = new Tuple3(0,0,0);
+      float lowestZ = 1000;
+      StringBuilder sb = new StringBuilder();
+      int v = 0;
+      for (Tuple3 vertex : _data.getVerts()) {
+         if (sb.length() > 0) {
+            sb.append("\n");
+         }
+         //Tuple3 positionedVertex = vertex.applyTransformation(_orientationTransform).add(_location);
+         Tuple3 positionedVertex = nextFrame.positionVertex(vertex);
+         float z = positionedVertex.getZ();
+         sb.append(" v").append(v++)
+           .append(":{").append(positionedVertex.getX())
+           .append(",").append(positionedVertex.getY())
+           .append(",").append(z).append("}");
+
+         if (z < (floorZValue +2)) {
+            pointsNearFloor.add(positionedVertex);
+         }
+         if (z < floorZValue) {
+            pointsBelowFloor.add(positionedVertex);
+            centerMassBelowFloor = centerMassBelowFloor.add(positionedVertex);
+         }
+         if (z < lowestZ) {
+            lowestZ = z;
          }
       }
-      centerMass = centerMass.divide(_data.getFaceCount());
-      Tuple3 positionedCenterMass = _frame.positionVertex(centerMass);
 
-      if (positonedBouncePoint != null) {
-         bounce(positonedBouncePoint, positionedCenterMass, acceleration, floorZvalue);
+      if (pointsBelowFloor.isEmpty()) {
+         // no collision, continue moving
+         _frame = nextFrame;
+         return;
+      }
+
+      float boundDepth = floorZValue - lowestZ;
+      if (boundDepth > 1) {
+         // If this bound went deeper than 2 pixels, split the time in half, and recompute each 1/2 frame
+         // this will cause recursion until we find the collision time frame within 1 pixels below the surface.
+         update(elapsedTimeInSeconds/2f, acceleration, floorZValue);
+         update(elapsedTimeInSeconds/2f, acceleration, floorZValue);
+         return;
+      }
+
+      //System.out.println(sb.toString());
+      centerMassBelowFloor = centerMassBelowFloor.divide(pointsBelowFloor.size());
+
+      // move the object to the floor level
+      Tuple3 locDelta = new Tuple3(0, 0, boundDepth);
+      nextFrame = nextFrame.addLocation(locDelta);
+      centerMassBelowFloor = centerMassBelowFloor.add(locDelta);
+
+      boolean anyFaceBelowFloor = pointsNearFloor.size() > 2;
+      Tuple3 positionedCenterMass = nextFrame.positionVertex(_centerMass);
+
+      // Check if we have stopped moving
+      if (((nextFrame._velocity.magnitude() * dampeningFactor) < acceleration.magnitude()) &&
+          (nextFrame._rotationalAxis.magnitude() < 40) && // degrees per second
+           anyFaceBelowFloor) {
+         _moving = false;
+         _frame = nextFrame;
+      }
+      else {
+         _frame = bounce(nextFrame, centerMassBelowFloor, positionedCenterMass, elapsedTimeInSeconds, acceleration);
       }
    }
+
+   static float dampeningFactor = 0.75f;
+   static float friction = .15f;
+   static float rotationalInteria = 30f;
+
+   protected Frame bounce(Frame frame, Tuple3 positionedCenterMassAtFloor, Tuple3 positionedCenterMass,
+                          float elapsedTimeInSeconds, Tuple3 acceleration) {
+      // If we are already moving upwards, this is still the previous bounce.
+      Tuple3 velocity = frame._velocity;
+      if (velocity.getZ() > 0) {
+         return frame;
+      }
+
+      Tuple3 pointToCenter = positionedCenterMass.subtract(positionedCenterMassAtFloor);
+      // Acceleration is expressed in pixels per second / second, and
+      // torque is expressed in radians per second,
+      // so we need to multiple the crossProduct by elapsedTimeSecond, and also convert the torque into Radians.
+      // we can do this in one step with the call to multiply((float)(Math.toRadians(elapsedTimeInSeconds)))
+      Tuple3 newTorque = pointToCenter.crossProduct(acceleration)
+                                      .multiply((float)(elapsedTimeInSeconds / rotationalInteria));
+      // TODO: Since the torque is applied off-center, should there be a lateral force as well?
+
+
+      // TODO: any existing lateral movement should be converted into rotational momentum by friction
+
+
+      double percentBounce = pointToCenter.unitVector().dotProduct(UP_VECTOR);
+
+      // If the object is rotating, some of that rotation should be turned in lateral movement:
+      Tuple3 nextFramePositionedCenterMassAtFloor = positionedCenterMassAtFloor.subtract(frame._location)
+                                                                               .applyTransformation(frame._orientationTransform)
+                                                                               .add(frame._location);
+      Tuple3 movementOfCenterMassAtFloor = nextFramePositionedCenterMassAtFloor.subtract(positionedCenterMassAtFloor);
+
+      Tuple3 newVelocity = new Tuple3(velocity.getX() - movementOfCenterMassAtFloor.getX() * friction * -20,
+                                      velocity.getY() - movementOfCenterMassAtFloor.getY() * friction * -20,
+                                      (- velocity.getZ() * (float)percentBounce));
+              //.multiply(dampeningFactor);
+
+      Frame newFrame = frame.setVelocity(newVelocity);
+      Tuple3 newRotationalAxis = addRotationalVectors(newFrame._rotationalAxis.multiply(1-friction), newTorque);
+      return newFrame.setRotationalAxis(newRotationalAxis);
+   }
+   public Tuple3 addRotationalVectors(Tuple3 rv1, Tuple3 rv2) {
+      if ((rv1.magnitude() > 180) || (rv2.magnitude() > 180)) {
+         return addRotationalVectors(rv1.multiply(.25f), rv2.multiply(.25f)).multiply(4f);
+      }
+      return rv1.add(rv2);
+   }
+
    public static Tuple3 getRotationToOrientNormalToZaxis(Tuple3 orientation) {
       // The rotation matrix will apply the X rotation first, followed by the Y rotation, followed by the Z rotation
       // We need to solve for only the X and Y, because once those have been applied, the orientation will already
@@ -77,9 +180,6 @@ public class Model
       return new Tuple3(angleX, angleY, 0.0f);
    }
 
-   protected void bounce(Tuple3 bouncePoint, Tuple3 positionedCenterMass, Tuple3 acceleration, float floorZvalue) {
-      _frame = _frame.bounce(bouncePoint, positionedCenterMass, acceleration, floorZvalue);
-   }
 
    /*
     * This method makes a copy of the Faces as ColoredFaces, in world positions with color.
