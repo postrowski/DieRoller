@@ -21,8 +21,6 @@ import org.eclipse.swt.graphics.Region;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Event;
-import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Shell;
 
 import com.ostrowski.dieroller.Die;
@@ -32,12 +30,12 @@ import com.ostrowski.graphics.model.ObjLoader;
 
 public class DieShell extends Thread implements PaintListener
 {
-   public Region                      _region;
-   public Shell                       _shell;
-   public Canvas                      _doubleBufferCanvas;
-   GC                                 _imageGC = null;
-   Image                              _image   = null;
-   private final World3D _world;
+   public Region region;
+   public Shell  shell;
+   public Canvas doubleBufferCanvas;
+   GC    imageGC = null;
+   Image image   = null;
+   private final World3D world;
 
    static final Map<Integer, ObjData> DIE_MAP  = new HashMap<>();
    static BufferedImage               TEXTURE  = null;
@@ -65,12 +63,12 @@ public class DieShell extends Thread implements PaintListener
       // =========================================
       // Create a Shell (window) from the Display
       // =========================================
-      _shell = new Shell(display, SWT.NO_TRIM | SWT.DOUBLE_BUFFERED);// | SWT.ON_TOP);
+      shell = new Shell(display, SWT.NO_TRIM | SWT.DOUBLE_BUFFERED);// | SWT.ON_TOP);
 
-      _shell.setLayout(new FillLayout());
+      shell.setLayout(new FillLayout());
 
-      _doubleBufferCanvas = new Canvas(_shell, SWT.NO_BACKGROUND);
-      _doubleBufferCanvas.addPaintListener(this);
+      doubleBufferCanvas = new Canvas(shell, SWT.NO_BACKGROUND);
+      doubleBufferCanvas.addPaintListener(this);
 
       if (!arg.startsWith("d")) {
          throw new InvalidParameterException();
@@ -93,7 +91,7 @@ public class DieShell extends Thread implements PaintListener
       if (results == null) {
          results = (int)(Math.floor(Math.random() * sides));
       }
-      _world = new World3D(TEXTURE);
+      world = new World3D(TEXTURE);
       //_world.add(new Die(sides, DIE_MAP.get(sides).clone(), scale, results, baseRgb, null));
       List<Tuple3> directions = new ArrayList<>();
       directions.add(new Tuple3(61,42,307));// per second
@@ -101,18 +99,18 @@ public class DieShell extends Thread implements PaintListener
       directions.clear();
       directions.add(new Tuple3(-61,-42,307));// per second
       //_world.add(new Die(4, DIE_MAP.get(4).clone(), scale, 3, baseRgb, directions));
-      _world.add(new Die(6, DIE_MAP.get(6).clone(), scale, 3, baseRgb, directions));
+      world.add(new Die(6, DIE_MAP.get(6).clone(), scale, 3, baseRgb, directions));
 
-      _shell.setSize(100, 100);
-      _shell.open();
+      shell.setSize(100, 100);
+      shell.open();
 
       // =============================================================
       // Register a listener for the Close event on the die Shell.
       // This disposes the Die Shell
       // =============================================================
-      _shell.addListener(SWT.Close, event -> {
+      shell.addListener(SWT.Close, event -> {
          System.out.println("Die Shell handling Close event, about to dispose this Shell");
-         _shell.dispose();
+         shell.dispose();
       });
 
       start();
@@ -120,7 +118,7 @@ public class DieShell extends Thread implements PaintListener
 
    @Override
    public void run() {
-      while (!_shell.isDisposed()) {
+      while (!shell.isDisposed()) {
          try {
             Thread.sleep(16);
 
@@ -128,29 +126,29 @@ public class DieShell extends Thread implements PaintListener
             break;
          }
 
-         if (_shell.isDisposed()) {
+         if (shell.isDisposed()) {
             break;
          }
-         _world.update();
+         world.update();
 
-         _shell.getDisplay().asyncExec(() -> {
-            if (_region != null) {
-               _region.dispose();
+         shell.getDisplay().asyncExec(() -> {
+            if (region != null) {
+               region.dispose();
             }
-            _region = _world.getOutline();
+            region = world.getOutline();
 
-            if (!_shell.isDisposed()) {
-               _image = paintImage(_shell.getDisplay());
-               if ((_region != null) && (!_region.isDisposed())) {
-                  _shell.setRegion(_region);
-                  Rectangle size = _region.getBounds();
+            if (!shell.isDisposed()) {
+               image = paintImage(shell.getDisplay());
+               if ((region != null) && (!region.isDisposed())) {
+                  shell.setRegion(region);
+                  Rectangle size = region.getBounds();
                   // clip the height & width to [1, 100]
                   size.height = Math.min(Math.max(size.height, 1), 400);
                   size.width = Math.min(Math.max(size.width, 1), 400);
                   //// add 25 to each dimension to prevent clipping
                   size.width += 25;
                   size.height += 25;
-                  _shell.setSize(size.width + size.x, size.height + size.y);
+                  shell.setSize(size.width + size.x, size.height + size.y);
                }
             }
          });
@@ -161,52 +159,52 @@ public class DieShell extends Thread implements PaintListener
    @Override
    public void paintControl(PaintEvent event) {
       // Draws the buffer image onto the canvas.
-      if ((_image != null) && (!_image.isDisposed())) {
-         event.gc.drawImage(_image, 0, 0);
+      if ((image != null) && (!image.isDisposed())) {
+         event.gc.drawImage(image, 0, 0);
       }
 
-      if (_imageGC != null) {
-         _imageGC.dispose();
-         _imageGC = null;
+      if (imageGC != null) {
+         imageGC.dispose();
+         imageGC = null;
       }
    }
 
    Image paintImage(Display display) {
-      synchronized (_world) {
+      synchronized (world) {
 
          // Creates new image only when absolutely necessary.
-         Point canvasSize = _doubleBufferCanvas.getSize();
+         Point canvasSize = doubleBufferCanvas.getSize();
          int width = canvasSize.x;
          int height = canvasSize.y;
          if ((width > 0) && (height > 0)) {
-//          Image image = (Image) _doubleBufferCanvas.getData("double-buffer-image");
-//            if (   (_image == null)
-//                || (_image.getBounds().width  < canvasSize.x)
-//                || (_image.getBounds().height < canvasSize.y))
+//          Image image = (Image) doubleBufferCanvas.getData("double-buffer-image");
+//            if (   (image == null)
+//                || (image.getBounds().width  < canvasSize.x)
+//                || (image.getBounds().height < canvasSize.y))
             {
-               if (_image != null) {
-                  width  = Math.max(width,  _image.getBounds().width);
-                  height = Math.max(height, _image.getBounds().height);
-                  _image.dispose();
+               if (image != null) {
+                  width  = Math.max(width, image.getBounds().width);
+                  height = Math.max(height, image.getBounds().height);
+                  image.dispose();
                }
 //               // Add 10 to the image size to reduce the chance it needs to be recreated
 //               width += 10; height += 10;
 
 //               System.out.println("creating image (" + width + ", " + height + ")");
-               _image = new Image(display, width, height);
-//               _doubleBufferCanvas.setData("double-buffer-image", image);
+               image = new Image(display, width, height);
+//               doubleBufferCanvas.setData("double-buffer-image", image);
             }
          }
 
          // Initializes the graphics context of the image.
          try {
-            _imageGC = new GC(_image);
-            _world.paintControl(display, _imageGC);
+            imageGC = new GC(image);
+            world.paintControl(display, imageGC);
          }
          catch (IllegalArgumentException e) {
             System.out.println(e);
          }
-         return _image;
+         return image;
       }
    }
 }

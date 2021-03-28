@@ -13,37 +13,37 @@ import static com.ostrowski.graphics.World3D.UP_VECTOR;
 
 public class Model
 {
-   protected final ObjData _data;
-   protected final float   _scale;
-   protected       Frame   _frame;
-   protected       int     _baseRGB     = 0x3030FF;                  // default color is light blue
-   protected       boolean _moving      = true;
-   protected       Tuple3  _centerMass;
+   protected final ObjData data;
+   protected final float scale;
+   protected       Frame   frame;
+   protected       int     baseRGB = 0x3030FF;                  // default color is light blue
+   protected       boolean moving  = true;
+   protected       Tuple3  centerMass;
 
    public Model(ObjData data, float scale, Integer baseRGB) {
-      _data     = data;
-      _scale    = scale;
+      this.data = data;
+      this.scale = scale;
       if (baseRGB != null) {
-         _baseRGB = baseRGB;
+         this.baseRGB = baseRGB;
       }
-      _frame = new Frame(new Tuple3(600, 300, 300),  // location
-                         new Tuple3(0, 30, 420),    // velocity, pixels per second
-                         //new Tuple3(-350, 460, 50));   // unit vector is axis, magnitude is degrees per second
-                         new Tuple3((float)(Math.random() * 1000f -500f),
+      frame = new Frame(new Tuple3(600, 300, 300),  // location
+                        new Tuple3(0, 30, 420),    // velocity, pixels per second
+                        //new Tuple3(-350, 460, 50));   // unit vector is axis, magnitude is degrees per second
+                        new Tuple3((float)(Math.random() * 1000f -500f),
                                     (float)(Math.random() * 1000f -500f),
                                     (float)(Math.random() * 1000f -500f)));   // unit vector is axis, magnitude is degrees per second
 
-      System.out.println("New object. rotationalAxis: " + _frame._rotationalAxis.toString());
-      _data.scale(scale, scale, scale);
-      _centerMass = _data.getAveragePoint();
+      System.out.println("New object. rotationalAxis: " + frame.rotationalAxis.toString());
+      this.data.scale(scale, scale, scale);
+      centerMass = this.data.getAveragePoint();
    }
 
    public void update(float elapsedTimeInSeconds, Tuple3 acceleration, float floorZValue) {
 
-      if (!_moving) {
+      if (!moving) {
          return;
       }
-      Frame nextFrame = _frame.update(elapsedTimeInSeconds, acceleration);
+      Frame nextFrame = frame.update(elapsedTimeInSeconds, acceleration);
 
       // Check if a corner hit the floor by iterating through each face, and each vertex in each face,
       // applying the current rotation matrix to each point, and seeing if it's lower than the floor.
@@ -54,7 +54,7 @@ public class Model
       float lowestZ = 1000;
       StringBuilder sb = new StringBuilder();
       int v = 0;
-      for (Tuple3 vertex : _data.getVerts()) {
+      for (Tuple3 vertex : data.getVerts()) {
          if (sb.length() > 0) {
             sb.append("\n");
          }
@@ -80,7 +80,7 @@ public class Model
 
       if (pointsBelowFloor.isEmpty()) {
          // no collision, continue moving
-         _frame = nextFrame;
+         frame = nextFrame;
          return;
       }
 
@@ -102,17 +102,17 @@ public class Model
       centerMassBelowFloor = centerMassBelowFloor.add(locDelta);
 
       boolean anyFaceBelowFloor = pointsNearFloor.size() > 2;
-      Tuple3 positionedCenterMass = nextFrame.positionVertex(_centerMass);
+      Tuple3 positionedCenterMass = nextFrame.positionVertex(centerMass);
 
       // Check if we have stopped moving
-      if (((nextFrame._velocity.magnitude() * dampeningFactor) < acceleration.magnitude()) &&
-          (nextFrame._rotationalAxis.magnitude() < 40) && // degrees per second
-           anyFaceBelowFloor) {
-         _moving = false;
-         _frame = nextFrame;
+      if (((nextFrame.velocity.magnitude() * dampeningFactor) < acceleration.magnitude()) &&
+          (nextFrame.rotationalAxis.magnitude() < 40) && // degrees per second
+          anyFaceBelowFloor) {
+         moving = false;
+         frame = nextFrame;
       }
       else {
-         _frame = bounce(nextFrame, centerMassBelowFloor, positionedCenterMass, elapsedTimeInSeconds, acceleration);
+         frame = bounce(nextFrame, centerMassBelowFloor, positionedCenterMass, elapsedTimeInSeconds, acceleration);
       }
    }
 
@@ -123,7 +123,7 @@ public class Model
    protected Frame bounce(Frame frame, Tuple3 positionedCenterMassAtFloor, Tuple3 positionedCenterMass,
                           float elapsedTimeInSeconds, Tuple3 acceleration) {
       // If we are already moving upwards, this is still the previous bounce.
-      Tuple3 velocity = frame._velocity;
+      Tuple3 velocity = frame.velocity;
       if (velocity.getZ() > 0) {
          return frame;
       }
@@ -144,9 +144,9 @@ public class Model
       double percentBounce = pointToCenter.unitVector().dotProduct(UP_VECTOR);
 
       // If the object is rotating, some of that rotation should be turned in lateral movement:
-      Tuple3 nextFramePositionedCenterMassAtFloor = positionedCenterMassAtFloor.subtract(frame._location)
-                                                                               .applyTransformation(frame._orientationTransform)
-                                                                               .add(frame._location);
+      Tuple3 nextFramePositionedCenterMassAtFloor = positionedCenterMassAtFloor.subtract(frame.location)
+                                                                               .applyTransformation(frame.orientationTransform)
+                                                                               .add(frame.location);
       Tuple3 movementOfCenterMassAtFloor = nextFramePositionedCenterMassAtFloor.subtract(positionedCenterMassAtFloor);
 
       Tuple3 newVelocity = new Tuple3(velocity.getX() - movementOfCenterMassAtFloor.getX() * friction * -20,
@@ -155,7 +155,7 @@ public class Model
               //.multiply(dampeningFactor);
 
       Frame newFrame = frame.setVelocity(newVelocity);
-      Tuple3 newRotationalAxis = addRotationalVectors(newFrame._rotationalAxis.multiply(1-friction), newTorque);
+      Tuple3 newRotationalAxis = addRotationalVectors(newFrame.rotationalAxis.multiply(1 - friction), newTorque);
       return newFrame.setRotationalAxis(newRotationalAxis);
    }
    public Tuple3 addRotationalVectors(Tuple3 rv1, Tuple3 rv2) {
@@ -186,10 +186,10 @@ public class Model
     */
    public List<ColoredFace> getColoredFaces() {
       List<ColoredFace> faces = new ArrayList<>();
-      for (Face face : _data.getFaces()) {
-         ColoredFace newFace = new ColoredFace(face, _baseRGB);
-         newFace.applyTransformation(_frame._orientationTransform);
-         newFace.move(_frame._location);
+      for (Face face : data.getFaces()) {
+         ColoredFace newFace = new ColoredFace(face, baseRGB);
+         newFace.applyTransformation(frame.orientationTransform);
+         newFace.move(frame.location);
          faces.add(newFace);
       }
       return faces;

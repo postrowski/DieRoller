@@ -8,14 +8,14 @@ package com.ostrowski.graphics.model;
  */
 public class Face implements Cloneable {
     /** The vertices making up this face */
-    protected final Tuple3[] _verts;
+    protected final Tuple3[] verts;
     /** The normals making up this face */
-    protected final Tuple3[] _norms;
+    protected final Tuple3[] norms;
     /** The texture coordinates making up this face */
-    protected final Tuple2[] _texs;
+    protected final Tuple2[] texs;
     /** The number of points */
-    protected       int      _points = 0;
-	 public    final int      _vertexCount;
+    protected       int      points = 0;
+	 public    final int      vertexCount;
 
 	/**
 	 * Create a new face
@@ -23,10 +23,10 @@ public class Face implements Cloneable {
 	 * @param points The number of points building up this face
 	 */
 	public Face(int points) {
-	   _vertexCount = points;
-		_verts = new Tuple3[points];
-		_norms = new Tuple3[points];
-		_texs  = new Tuple2[points];
+	   vertexCount = points;
+		verts = new Tuple3[points];
+		norms = new Tuple3[points];
+		texs = new Tuple2[points];
 	}
 
 	/**
@@ -37,16 +37,16 @@ public class Face implements Cloneable {
 	 * @param norm the normal information for the point
 	 */
 	public void addPoint(Tuple3 vert, Tuple2 tex, Tuple3 norm) {
-		_verts[_points] = vert;
-		_texs[_points]  = tex;
-		_norms[_points] = norm;
+		verts[points] = vert;
+		texs[points]  = tex;
+		norms[points] = norm;
 
-		_points++;
+		points++;
 	}
 
 	public Tuple3 getCommonNormal() {
-      Tuple3 s01 = _verts[0].subtract(_verts[1]);
-      Tuple3 s12 = _verts[1].subtract(_verts[2]);
+      Tuple3 s01 = verts[0].subtract(verts[1]);
+      Tuple3 s12 = verts[1].subtract(verts[2]);
       return s01.crossProduct(s12).normalize();
 	}
 
@@ -57,7 +57,7 @@ public class Face implements Cloneable {
 	 * @return The vertex information from this face
 	 */
 	public Tuple3 getVertex(int p) {
-		return _verts[p];
+		return verts[p];
 	}
 
 	/**
@@ -67,7 +67,7 @@ public class Face implements Cloneable {
 	 * @return The texture information from this face
 	 */
 	public Tuple2 getTexCoord(int p) {
-		return _texs[p];
+		return texs[p];
 	}
 
 	/**
@@ -77,7 +77,7 @@ public class Face implements Cloneable {
 	 * @return The normal information from this face
 	 */
 	public Tuple3 getNormal(int p) {
-		return _norms[p];
+		return norms[p];
 	}
 
    /**
@@ -89,41 +89,41 @@ public class Face implements Cloneable {
     *    B C  =>  C B      |       B C  =>   D C
     */
    public Face invertNormal() {
-      if ((_verts.length == 3) || (_verts.length == 4)) {
+      if ((verts.length == 3) || (verts.length == 4)) {
 //         int sourceIndex = 1;
-//         int destIndex = (_verts.length -1);
-//         Tuple3 tempT3 = _verts[sourceIndex];
-//         _verts[sourceIndex] = _verts[destIndex];
-//         _verts[destIndex] = tempT3;
+//         int destIndex = (verts.length -1);
+//         Tuple3 tempT3 = verts[sourceIndex];
+//         verts[sourceIndex] = verts[destIndex];
+//         verts[destIndex] = tempT3;
 //
-//         tempT3 = _norms[sourceIndex];
-//         _norms[sourceIndex] = _norms[destIndex];
-//         _norms[destIndex] = tempT3;
+//         tempT3 = norms[sourceIndex];
+//         norms[sourceIndex] = norms[destIndex];
+//         norms[destIndex] = tempT3;
 //
-//         Tuple2 tempT2 = _texs[sourceIndex];
-//         _texs[sourceIndex] = _texs[destIndex];
-//         _texs[destIndex] = tempT2;
-         Face face = new Face(_vertexCount);
-         face.addPoint(_verts[0], _texs[0], _norms[0]);
-         if (_verts.length == 3) {
-            face.addPoint(_verts[2], _texs[2], _norms[2]);
+//         Tuple2 tempT2 = texs[sourceIndex];
+//         texs[sourceIndex] = texs[destIndex];
+//         texs[destIndex] = tempT2;
+         Face face = new Face(vertexCount);
+         face.addPoint(verts[0], texs[0], norms[0]);
+         if (verts.length == 3) {
+            face.addPoint(verts[2], texs[2], norms[2]);
          }
-         if (_verts.length == 4) {
-            face.addPoint(_verts[3], _texs[3], _norms[3]);
-            face.addPoint(_verts[2], _texs[2], _norms[2]);
+         if (verts.length == 4) {
+            face.addPoint(verts[3], texs[3], norms[3]);
+            face.addPoint(verts[2], texs[2], norms[2]);
          }
-         face.addPoint(_verts[1], _texs[1], _norms[1]);
+         face.addPoint(verts[1], texs[1], norms[1]);
          return face;
       }
       throw new IllegalStateException();
    }
 
    public void applyTransformation(Matrix3x3 matrix) {
-      for (int i=0 ; i<_verts.length ; i++) {
-         _verts[i] = _verts[i].applyTransformation(matrix);
+      for (int i = 0; i < verts.length ; i++) {
+         verts[i] = verts[i].applyTransformation(matrix);
       }
-      for (int i=0 ; i<_norms.length ; i++) {
-         _norms[i] = _norms[i].applyTransformation(matrix);
+      for (int i = 0; i < norms.length ; i++) {
+         norms[i] = norms[i].applyTransformation(matrix);
       }
    }
 
@@ -133,32 +133,32 @@ public class Face implements Cloneable {
    }
 
    public void scale(double xScale, double yScale, double zScale) {
-      for (int i=0 ; i<_verts.length ; i++) {
-         _verts[i] = _verts[i].scale(xScale, yScale, zScale);
+      for (int i = 0; i < verts.length ; i++) {
+         verts[i] = verts[i].scale(xScale, yScale, zScale);
       }
       // we don't need to scale the texture map, because that is in its own scale [0-1).
    }
 
    public void move(Tuple3 offset) {
-      for (int i=0 ; i<_verts.length ; i++) {
-         _verts[i] = _verts[i].add(offset);
+      for (int i = 0; i < verts.length ; i++) {
+         verts[i] = verts[i].add(offset);
       }
    }
 
    public Tuple3 getVertexCenter() {
       Tuple3 vertexCenter = new Tuple3(0,0,0);
-      for (int v=0 ; v<_vertexCount ; v++ ) {
+      for (int v = 0; v < vertexCount; v++ ) {
          vertexCenter = vertexCenter.add(getVertex(v));
       }
-      return vertexCenter.divide(_vertexCount);
+      return vertexCenter.divide(vertexCount);
    }
 
    @Override
    public Face clone() {
-      Face dup = new Face(_points);
-      for (int i=0 ; i<_points ; i++) {
-         //dup.addPoint(_verts[i], _texs[i], _norms[i]);
-         dup.addPoint(_verts[i].clone(), _texs[i].clone(), _norms[i].clone());
+      Face dup = new Face(points);
+      for (int i = 0; i < points; i++) {
+         //dup.addPoint(verts[i], texs[i], norms[i]);
+         dup.addPoint(verts[i].clone(), texs[i].clone(), norms[i].clone());
       }
       return dup;
    }

@@ -15,31 +15,30 @@ import java.util.StringTokenizer;
 public class ObjData implements Cloneable
 {
    /** The verticies that have been read from the file */
-   private final List<Tuple3> _verts     = new ArrayList<>();
+   private final List<Tuple3> verts = new ArrayList<>();
    /** The faces data read from the file */
-   private final List<Face>   _faces     = new ArrayList<>();
+   private final List<Face>   faces = new ArrayList<>();
 
    /** The normals that have been read from the file */
-   private final List<Tuple3> _normals = new ArrayList<>();
-   Tuple3 _avePoint = null;
-
+   private final List<Tuple3> normals = new ArrayList<>();
+   Tuple3 avePoint = null;
 
    public ObjData() {
    }
 
    public Tuple3 getAveragePoint() {
-      if (_avePoint == null) {
-         _avePoint = new Tuple3(0,0,0);
+      if (avePoint == null) {
+         avePoint = new Tuple3(0, 0, 0);
          int totalCount = 0;
-         for (Face face : _faces) {
-            for (int v=0 ; v< face._vertexCount ; v++) {
-               _avePoint = _avePoint.add(face.getVertex(v));
+         for (Face face : faces) {
+            for (int v = 0; v< face.vertexCount; v++) {
+               avePoint = avePoint.add(face.getVertex(v));
                totalCount++;
             }
          }
-         _avePoint = _avePoint.divide(totalCount);
+         avePoint = avePoint.divide(totalCount);
       }
-      return _avePoint;
+      return avePoint;
    }
    /**
     * Create a new set of OBJ data by reading it in from the specified
@@ -70,7 +69,7 @@ public class ObjData implements Cloneable
             // "vn" indicates normal data
             if (line.startsWith("vn")) {
                Tuple3 normal = readTuple3(line);
-               _normals.add(normal);
+               normals.add(normal);
                // "vt" indicates texture coordinate data
             }
             else if (line.startsWith("vt")) {
@@ -80,25 +79,25 @@ public class ObjData implements Cloneable
             }
             else if (line.startsWith("v")) {
                Tuple3 vert = readTuple3(line);
-               _verts.add(vert);
+               verts.add(vert);
                // "f" indicates a face
             }
             else if (line.startsWith("f")) {
-               // readFace(...) assumes that the vertex data is already loaded into _verts
+               // readFace(...) assumes that the vertex data is already loaded into verts
                Face face = readFace(line, texCoords);
-               _faces.add(face);
+               faces.add(face);
             }
          }
 
          Tuple3 total = new Tuple3(0,0,0);
-         for (Tuple3 vert : _verts) {
+         for (Tuple3 vert : verts) {
             total = total.add(vert);
          }
-         total = total.divide(_verts.size());
+         total = total.divide(verts.size());
 
          float totalMagnitude = 0;
          List<Tuple3> newVerts = new ArrayList<>();
-         for (Tuple3 tuple3 : _verts) {
+         for (Tuple3 tuple3 : verts) {
             Tuple3 newVert = tuple3.subtract(total);
             newVerts.add(newVert);
             totalMagnitude += newVert.magnitude();
@@ -106,22 +105,22 @@ public class ObjData implements Cloneable
          float aveMagnitude = totalMagnitude / newVerts.size();
          for (Tuple3 newVert : newVerts) {
             Tuple3 vert = newVert.divide(aveMagnitude);
-            System.out.println(String.format("v %.6f %.6f %.6f (%.8f)", vert._x, vert._y, vert._z, vert.magnitude()));
+            System.out.println(String.format("v %.6f %.6f %.6f (%.8f)", vert.x, vert.y, vert.z, vert.magnitude()));
          }
-         System.out.println("average vertex: (" + total._x + ", " + total._y + ", " + total._z + "), ave. magnitude:" + aveMagnitude);
+         System.out.println("average vertex: (" + total.x + ", " + total.y + ", " + total.z + "), ave. magnitude:" + aveMagnitude);
       }
       // Print some diagnositics data so we can see whats happening
       // while testing
-      //System.out.println("Read " + _verts.size() + " verticies");
-      //System.out.println("Read " + _faces.size() + " faces");
+      //System.out.println("Read " + verts.size() + " verticies");
+      //System.out.println("Read " + faces.size() + " faces");
    }
 
    public List<Face> getFaces() {
-      return _faces;
+      return faces;
    }
 
    public List<Tuple3> getVerts() {
-      return _verts;
+      return verts;
    }
 
    /**
@@ -130,7 +129,7 @@ public class ObjData implements Cloneable
     * @return The number of faces found in the model file
     */
    public int getFaceCount() {
-      return _faces.size();
+      return faces.size();
    }
 
    /**
@@ -140,17 +139,17 @@ public class ObjData implements Cloneable
     * @return The face data requested
     */
    public Face getFace(int index) {
-      return _faces.get(index);
+      return faces.get(index);
    }
 
    public void scale(double xScale, double yScale, double zScale) {
       List<Tuple3> newVerts = new ArrayList<>();
-      for (Tuple3 vert : _verts) {
+      for (Tuple3 vert : verts) {
          newVerts.add(vert.scale(xScale, yScale, zScale));
       }
-      _verts.clear();
-      _verts.addAll(newVerts);
-      for (Face face : _faces) {
+      verts.clear();
+      verts.addAll(newVerts);
+      for (Face face : faces) {
          face.scale(xScale, yScale, zScale);
       }
 
@@ -158,23 +157,23 @@ public class ObjData implements Cloneable
 
    public void move(Tuple3 offset) {
       List<Tuple3> newVerts = new ArrayList<>();
-      for (Tuple3 vert : _verts) {
+      for (Tuple3 vert : verts) {
          newVerts.add(vert.add(offset));
       }
-      _verts.clear();
-      _verts.addAll(newVerts);
-      for (Face face : _faces) {
+      verts.clear();
+      verts.addAll(newVerts);
+      for (Face face : faces) {
          face.move(offset);
       }
    }
 
    public void move(double xOffset, double yOffset, double zOffset) {
       List<Tuple3> newVerts = new ArrayList<>();
-      for (Tuple3 vert : _verts) {
+      for (Tuple3 vert : verts) {
          newVerts.add(vert.move(xOffset, yOffset, zOffset));
       }
-      _verts.clear();
-      _verts.addAll(newVerts);
+      verts.clear();
+      verts.addAll(newVerts);
    }
 
    public void rotate(float x, float y, float z) {
@@ -184,20 +183,20 @@ public class ObjData implements Cloneable
 
    public void applyTransform(Matrix3x3 transform) {
       List<Tuple3> newVerts = new ArrayList<>();
-      for (Tuple3 vert : _verts) {
+      for (Tuple3 vert : verts) {
          newVerts.add(vert.applyTransformation(transform));
       }
-      _verts.clear();
-      _verts.addAll(newVerts);
+      verts.clear();
+      verts.addAll(newVerts);
 
       List<Tuple3> newNormals = new ArrayList<>();
-      for (Tuple3 normal : _normals) {
+      for (Tuple3 normal : normals) {
          newNormals.add(normal.applyTransformation(transform));
       }
-      _normals.clear();
-      _normals.addAll(newNormals);
+      normals.clear();
+      normals.addAll(newNormals);
 
-      for (Face face : _faces) {
+      for (Face face : faces) {
          face.applyTransformation(transform);
       }
    }
@@ -284,10 +283,10 @@ public class ObjData implements Cloneable
             if (parts.hasMoreElements()) {
                int n = Integer.parseInt(parts.nextToken());
                // We have the indexes, we can now add the point data to the face.
-               face.addPoint(_verts.get(v - 1), texCoords.get(t - 1), _normals.get(n - 1));
+               face.addPoint(verts.get(v - 1), texCoords.get(t - 1), normals.get(n - 1));
             }
             else {
-               face.addPoint(_verts.get(v - 1), new Tuple2(0, 0), _normals.get(t - 1));
+               face.addPoint(verts.get(v - 1), new Tuple2(0, 0), normals.get(t - 1));
             }
          }
       } catch (Exception e) {
@@ -297,10 +296,10 @@ public class ObjData implements Cloneable
       Tuple3 line2 = face.getVertex(2).subtract(face.getVertex(1));
       Tuple3 compNorm = line1.crossProduct(line2).normalize();
       Tuple3 reportedNorm = face.getNormal(0).add(face.getNormal(1).add(face.getNormal(2)));
-      if (face._vertexCount == 4) {
+      if (face.vertexCount == 4) {
          reportedNorm = reportedNorm.add(face.getNormal(3));
       }
-      reportedNorm = reportedNorm.divide(face._vertexCount);
+      reportedNorm = reportedNorm.divide(face.vertexCount);
 
       float dotProduct = compNorm.dotProduct(reportedNorm );
       if ((dotProduct < 0.5) || (dotProduct > 1.5)) {
@@ -311,26 +310,26 @@ public class ObjData implements Cloneable
 
    public void scaleNormals(double x, double y, double z) {
       List<Tuple3> newNormals = new ArrayList<>();
-      for (Tuple3 normal : _normals) {
+      for (Tuple3 normal : normals) {
          Tuple3 newVert = normal.scale(x, y, z);
          newNormals.add(newVert);
       }
-      _normals.clear();
-      _normals.addAll(newNormals);
+      normals.clear();
+      normals.addAll(newNormals);
    }
 
 
    @Override
    public ObjData clone() {
       ObjData duplicate = new ObjData();
-      for (Tuple3 v : _verts) {
-         duplicate._verts.add(v.multiply(1f));
+      for (Tuple3 v : verts) {
+         duplicate.verts.add(v.multiply(1f));
       }
-      for (Face f : _faces) {
-         duplicate._faces.add(f.clone());
+      for (Face f : faces) {
+         duplicate.faces.add(f.clone());
       }
-      for (Tuple3 n : _normals) {
-         duplicate._normals.add(n.multiply(1f));
+      for (Tuple3 n : normals) {
+         duplicate.normals.add(n.multiply(1f));
       }
       return duplicate;
    }

@@ -2,20 +2,20 @@ package com.ostrowski.graphics.model;
 
 public class ColoredFace extends Face
 {
-   private int _colorRGB;
+   private int colorRGB;
    public ColoredFace(Face base, int colorRGB) {
-      super (base._vertexCount);
-      for (int i=0 ; i<base._vertexCount ; i++) {
-         addPoint(base._verts[i].clone(), base._texs[i].clone(), base._norms[i].clone());
+      super(base.vertexCount);
+      for (int i = 0; i<base.vertexCount; i++) {
+         addPoint(base.verts[i].clone(), base.texs[i].clone(), base.norms[i].clone());
       }
-      _colorRGB = colorRGB;
+      this.colorRGB = colorRGB;
    }
 
    public int getColor() {
-      return _colorRGB;
+      return colorRGB;
    }
 
    public void setColor(int newColorRGB) {
-      _colorRGB = newColorRGB;
+      colorRGB = newColorRGB;
    }
 }

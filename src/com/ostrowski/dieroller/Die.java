@@ -15,42 +15,42 @@ import com.ostrowski.graphics.model.Tuple3;
 
 public class Die extends Model
 {
-   private final int          _resultRGB = 0xA03030; // default results color is redish
-   private final int          _results;
-   private final Tuple3       _targetOrientation;
-   private final List<Tuple3> _directions = new ArrayList<>();
-   private final int          _sides;
+   private final int          resultRGB = 0xA03030; // default results color is redish
+   private final int          results;
+   private final Tuple3       targetOrientation;
+   private final List<Tuple3> directions = new ArrayList<>();
+   private final int          sides;
 
    public Die(int sides, ObjData data, float scale, int results, Integer baseRGB, List<Tuple3> directions) {
       super(data, scale, baseRGB);
-      _sides = sides;
-      _results = results;
+      this.sides = sides;
+      this.results = results;
       if (directions != null) {
-         _directions.addAll(directions);
+         this.directions.addAll(directions);
          // override the default direction with the first direction
-         if ((_directions != null) && (!_directions.isEmpty())) {
-            _frame = _frame.setVelocity(_directions.remove(0));
+         if ((this.directions != null) && (!this.directions.isEmpty())) {
+            frame = frame.setVelocity(this.directions.remove(0));
          }
       }
 
 
-      Face face = _data.getFace(_results - 1);
+      Face face = this.data.getFace(this.results - 1);
       Tuple3 normal = face.getCommonNormal();
       if (sides == 4) {
          normal = normal.multiply(-1.0f);
       }
 
-      _targetOrientation = normal;
+      targetOrientation = normal;
       if (sides == 20) {
-         _frame = _frame.setVelocity(_frame._velocity.add(new Tuple3(10, -40, 0)));
+         frame = frame.setVelocity(frame.velocity.add(new Tuple3(10, -40, 0)));
       }
       // Orient the die so that it starts out with the results face up
-      _frame = _frame.setUp(_targetOrientation);
+      frame = frame.setUp(targetOrientation);
    }
 
    @Override
    public void update(float elapsedTimeInSeconds, Tuple3 acceleration, float floorZValue) {
-      if (!_moving) {
+      if (!moving) {
          return;
       }
       super.update(elapsedTimeInSeconds, acceleration, floorZValue);
@@ -59,9 +59,9 @@ public class Die extends Model
    @Override
    protected Frame bounce(Frame frame, Tuple3 positionedCenterMassAtFloor, Tuple3 positionedCenterMass,
                           float elapsedTimeInSeconds, Tuple3 acceleration) {
-      // Use the vectors in the _directions list for each bounce.
-      if ((_directions != null) && (!_directions.isEmpty())) {
-         return _frame.setVelocity(_directions.remove(0));
+      // Use the vectors in the directions list for each bounce.
+      if ((directions != null) && (!directions.isEmpty())) {
+         return this.frame.setVelocity(directions.remove(0));
       }
       return super.bounce(frame, positionedCenterMassAtFloor, positionedCenterMass, elapsedTimeInSeconds, acceleration);
    }
@@ -70,12 +70,12 @@ public class Die extends Model
    public List<ColoredFace> getColoredFaces() {
       List<ColoredFace> faces = super.getColoredFaces();
       // augment the results face by shading in a contrasting color
-      if (!_moving) {
-         int facesToFind = _data.getFaceCount() / _sides;
+      if (!moving) {
+         int facesToFind = data.getFaceCount() / sides;
          for (ColoredFace face : faces) {
             float upness = face.getCommonNormal().dotProduct(UP_VECTOR);
             if (upness > 0.98f) {
-               face.setColor(_resultRGB);
+               face.setColor(resultRGB);
                if (--facesToFind == 0) {
                   break;
                }
@@ -101,14 +101,14 @@ public class Die extends Model
 //    HashMap<Face, Float> faceToBrightness = new HashMap<>();
 //    HashMap<Face, int[]> faceToPoints     = new HashMap<>();
 //
-//    for (Face face : _data.getFaces()) {
+//    for (Face face : data.getFaces()) {
 //       // don't draw faces that face away:
 //       if (isFacingAway(face)) {
 //          continue;
 //       }
 //
-//       float brightness = _lightSource.dotProduct(normal);
-//       brightness = (Math.max(0, brightness) * (_lightestColor - _darkestColor)) + _darkestColor;
+//       float brightness = lightSource.dotProduct(normal);
+//       brightness = (Math.max(0, brightness) * (lightestColor - darkestColor)) + darkestColor;
 //
 //       int[] points = getPoints(face);
 //       faceToRect.put(face, getBounds(points));
@@ -117,9 +117,9 @@ public class Die extends Model
 //       orderedFaces.add(face);
 //    }
 //
-////    _image_red   = new int[area.width][area.height];
-////    _image_green = new int[area.width][area.height];
-////    _image_blue  = new int[area.width][area.height];
+////    image_red   = new int[area.width][area.height];
+////    image_green = new int[area.width][area.height];
+////    image_blue  = new int[area.width][area.height];
 //
 //    Color currentColor = null;
 //

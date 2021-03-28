@@ -10,7 +10,7 @@ public class DieRoller {
     Display display = new Display();
     Integer RGBcolor = 0x3030FF;
     DieShell shell = new DieShell(display, "d20=20", 50.0f, RGBcolor);
-    while (!shell._shell.isDisposed ()) {
+    while (!shell.shell.isDisposed()) {
        if (!display.readAndDispatch ()) {
           display.sleep ();
        }

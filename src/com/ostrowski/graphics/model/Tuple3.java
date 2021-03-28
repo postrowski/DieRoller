@@ -10,13 +10,13 @@ import java.nio.FloatBuffer;
  */
 public class Tuple3 implements Cloneable, Comparable<Tuple3> {
    static int NEXT_ID = 0;
-   public final int objId = NEXT_ID++;
+   public final int      objId = NEXT_ID++;
 	/** The x element in this tuple */
-	protected final float _x;
+	protected final float x;
 	/** The y element in this tuple */
-	protected final float _y;
+	protected final float y;
 	/** The z element in this tuple */
-	protected final float _z;
+	protected final float z;
 
 	/**
 	 * Create a new 3 dimensional tuple
@@ -26,21 +26,21 @@ public class Tuple3 implements Cloneable, Comparable<Tuple3> {
 	 * @param z The Z element value for the new tuple
 	 */
    public Tuple3(float x,float y,float z) {
-      this._x = x;
-      this._y = y;
-      this._z = z;
+      this.x = x;
+      this.y = y;
+      this.z = z;
    }
    public Tuple3(FloatBuffer buffer) {
-      this._x = buffer.get(0);
-      this._y = buffer.get(1);
-      this._z = buffer.get(2);
+      this.x = buffer.get(0);
+      this.y = buffer.get(1);
+      this.z = buffer.get(2);
    }
 
    public Tuple3 scale(double xScale, double yScale, double zScale) {
-      return new Tuple3((float)(_x * xScale), (float)(_y * yScale), (float)(_z * zScale));
+      return new Tuple3((float)(x * xScale), (float)(y * yScale), (float)(z * zScale));
    }
    public Tuple3 move(double xOffset, double yOffset, double zOffset) {
-      return new Tuple3((float)(_x + xOffset), (float)(_y + yOffset), (float)(_z + zOffset));
+      return new Tuple3((float)(x + xOffset), (float)(y + yOffset), (float)(z + zOffset));
    }
 
 	/**
@@ -49,7 +49,7 @@ public class Tuple3 implements Cloneable, Comparable<Tuple3> {
 	 * @return The X element value from this tuple
 	 */
 	public float getX() {
-		return _x;
+		return x;
 	}
 
 	/**
@@ -58,7 +58,7 @@ public class Tuple3 implements Cloneable, Comparable<Tuple3> {
 	 * @return The Y element value from this tuple
 	 */
 	public float getY() {
-		return _y;
+		return y;
 	}
 
 	/**
@@ -67,7 +67,7 @@ public class Tuple3 implements Cloneable, Comparable<Tuple3> {
 	 * @return The Z element value from this tuple
 	 */
 	public float getZ() {
-		return _z;
+		return z;
 	}
 
    public Tuple3 add(float dx, float dy, float dz) {
@@ -94,9 +94,9 @@ public class Tuple3 implements Cloneable, Comparable<Tuple3> {
    }
 
    public Tuple3 crossProduct(Tuple3 other) {
-      return new Tuple3((_y*other._z) - (_z*other._y),
-                        (_z*other._x) - (_x*other._z),
-                        (_x*other._y) - (_y*other._x));
+      return new Tuple3((y * other.z) - (z * other.y),
+                        (z * other.x) - (x * other.z),
+                        (x * other.y) - (y * other.x));
    }
    public double magnitude() {
       return Math.sqrt(this.dotProduct(this));
@@ -129,7 +129,7 @@ public class Tuple3 implements Cloneable, Comparable<Tuple3> {
 
    @Override
    public Tuple3 clone() {
-      return new Tuple3(_x, _y, _z);
+      return new Tuple3(x, y, z);
    }
 
    @Override
@@ -143,9 +143,9 @@ public class Tuple3 implements Cloneable, Comparable<Tuple3> {
    @Override
    public int compareTo(Tuple3 o) {
       int comp;
-      comp = compareAxis(_x, o._x, o); if (comp != 0) return comp;
-      comp = compareAxis(_y, o._y, o); if (comp != 0) return comp;
-      comp = compareAxis(_z, o._z, o); if (comp != 0) return comp;
+      comp = compareAxis(x, o.x, o); if (comp != 0) return comp;
+      comp = compareAxis(y, o.y, o); if (comp != 0) return comp;
+      comp = compareAxis(z, o.z, o); if (comp != 0) return comp;
       return 0;
    }
    public int compareAxis(float thisAxis, float othersAxis, Tuple3 other) {

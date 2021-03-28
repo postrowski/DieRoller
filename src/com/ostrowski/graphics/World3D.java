@@ -22,67 +22,67 @@ import com.ostrowski.graphics.model.Tuple3;
 
 public class World3D
 {
-   private final        List<Model>   _data                          = new ArrayList<>();
-   private final        Tuple3        _acceleration                  = new Tuple3(0, 0, -1500);   // per seconds^2
-   static final         Tuple3        _cameraPosition                = new Tuple3(0, 900, 900);   // the position of the camera
-   final                Matrix3x3     _viewTransform                 = Matrix3x3./*IdentityMatrix();*/getRotationalTransformation(35, 0, 0); // in degrees
-   private final static int           FOCAL_LENGTH                   = 2200;
-   private final static int           CAMERA_DISTANCE                = 2500;
-   private final        Tuple3        _lightSource                   = new Tuple3(0, 1, 1).unitVector();
-   private final        Tuple3        _lightPerZ                     = _lightSource.divide(_lightSource.getZ());
-   private final        int           _floorZValue                   = -100;
-   private              Long          _timeOfLastUpdate              = null;
-   private final static float         DARKEST_COLOR                  = 0.3f;
-   private final static float         LIGHTEST_COLOR                 = 1.0f;
-   private final        BufferedImage _texture;
-   private              boolean       _waitingTillGetOutlineIsCalled = false;
-   final                List<Face>    _shadows                       = new ArrayList<>();
-   final                Tuple2        _shadowTextureVertex           = new Tuple2(0, 0);
-   final                Tuple3        _shadowNormal                  = new Tuple3(0, 0, 1);
-   long _totalTime = 0;
-   long _drawCount = 0;
+   private final        List<Model>   data                          = new ArrayList<>();
+   private final        Tuple3        acceleration                  = new Tuple3(0, 0, -1500);   // per seconds^2
+   static final         Tuple3        cameraPosition                = new Tuple3(0, 900, 900);   // the position of the camera
+   final                Matrix3x3     viewTransform                 = Matrix3x3./*IdentityMatrix();*/getRotationalTransformation(35, 0, 0); // in degrees
+   private final static int           FOCAL_LENGTH                  = 2200;
+   private final static int           CAMERA_DISTANCE               = 2500;
+   private final        Tuple3        lightSource                   = new Tuple3(0, 1, 1).unitVector();
+   private final        Tuple3        lightPerZ                     = lightSource.divide(lightSource.getZ());
+   private final        int           floorZValue                   = -100;
+   private              Long          timeOfLastUpdate              = null;
+   private final static float         DARKEST_COLOR                 = 0.3f;
+   private final static float         LIGHTEST_COLOR                = 1.0f;
+   private final        BufferedImage texture;
+   private              boolean       waitingTillGetOutlineIsCalled = false;
+   final                List<Face>    shadows                       = new ArrayList<>();
+   final                Tuple2        shadowTextureVertex           = new Tuple2(0, 0);
+   final                Tuple3        shadowNormal                  = new Tuple3(0, 0, 1);
+   long totalTime = 0;
+   long drawCount = 0;
    public static final Tuple3 UP_VECTOR = new Tuple3(0, 0, 1);
 
    public void add(Model data) {
-      _data.add(data);
+      this.data.add(data);
    }
    public World3D(BufferedImage texture) {
-      _texture       = texture;
+      this.texture = texture;
    }
 
    public synchronized void update() {
-      if (_waitingTillGetOutlineIsCalled) {
+      if (waitingTillGetOutlineIsCalled) {
          return;
       }
 
 //      if (_rollState == RollState.LEVELING) {
-//         Tuple3 targetsCurrentOrientation = _targetOrientation.applyTransformation(_orientationTransform);
-//         _rotationalAxis = targetsCurrentOrientation.crossProduct(_upVector).unitVector();
+//         Tuple3 targetsCurrentOrientation = targetOrientation.applyTransformation(_orientationTransform);
+//         rotationalAxis = targetsCurrentOrientation.crossProduct(upVector).unitVector();
 //         // set the rotational speed:
-//         _rotationalAxis = _rotationalAxis.multiply(targetsCurrentOrientation.dotProduct(_upVector) * 5);
+//         rotationalAxis = rotationalAxis.multiply(targetsCurrentOrientation.dotProduct(upVector) * 5);
 //      }
 
       long now = System.currentTimeMillis();
-      if (_timeOfLastUpdate == null) {
-         _timeOfLastUpdate = now;
+      if (timeOfLastUpdate == null) {
+         timeOfLastUpdate = now;
          return;
       }
-      float elapsedTimeInSeconds = (now - _timeOfLastUpdate) / 1000f;
-      _timeOfLastUpdate = now;
+      float elapsedTimeInSeconds = (now - timeOfLastUpdate) / 1000f;
+      timeOfLastUpdate = now;
 
       boolean debugging = false;
       if (debugging) {
          elapsedTimeInSeconds /= 10f;
       }
 
-      for (Model model : _data) {
-         model.update(elapsedTimeInSeconds, _acceleration, _floorZValue);
+      for (Model model : data) {
+         model.update(elapsedTimeInSeconds, acceleration, floorZValue);
       }
 
       // Now that the location is finalized, figure out the shadows.
       computeShadows();
 
-      _waitingTillGetOutlineIsCalled = true;
+      waitingTillGetOutlineIsCalled = true;
    }
 
 
@@ -93,25 +93,25 @@ public class World3D
 
 
    public void computeShadows() {
-      _shadows.clear();
-      for (Model model : _data) {
+      shadows.clear();
+      for (Model model : data) {
          for (Face face : model.getColoredFaces()) {
             Tuple3 normal = face.getCommonNormal();
             // See if the light is hitting this face.
             // If so, the clockwise orientation of the vertices will cast a clockwise shadow
-            if (normal.dotProduct(_lightSource) > 0) {
+            if (normal.dotProduct(lightSource) > 0) {
                List<Tuple3> pointsOnFloor = new ArrayList<>();
-               for (int v = 0 ; v<face._vertexCount ; v++) {
+               for (int v = 0; v<face.vertexCount; v++) {
                   Tuple3 vertex = face.getVertex(v);
-                  float distanceToFloor = _floorZValue - vertex.getZ();
-                  Tuple3 pointOnFloor = _lightPerZ.multiply(distanceToFloor).add(vertex);
+                  float distanceToFloor = floorZValue - vertex.getZ();
+                  Tuple3 pointOnFloor = lightPerZ.multiply(distanceToFloor).add(vertex);
                   pointsOnFloor.add(pointOnFloor);
                }
                Face shadow = new Face(pointsOnFloor.size());
                for (Tuple3 point : pointsOnFloor) {
-                  shadow.addPoint(point, _shadowTextureVertex, _shadowNormal);
+                  shadow.addPoint(point, shadowTextureVertex, shadowNormal);
                }
-               _shadows.add(shadow);
+               shadows.add(shadow);
             }
          }
       }
@@ -119,15 +119,15 @@ public class World3D
 
    static Tuple3 adjustForViewAndPerspective(Tuple3 vertex, Matrix3x3 viewTransform) {
       Tuple3 adjusted = viewTransform.multiply(vertex);
-      //float cameraDistance = (float) _cameraPosition.subtract(vertex).magnitude();
+      //float cameraDistance = (float) cameraPosition.subtract(vertex).magnitude();
       float cameraDistance = CAMERA_DISTANCE - adjusted.getZ();
       float depthScale = FOCAL_LENGTH / cameraDistance;
       return adjusted.scale(depthScale, depthScale, 1.0);
    }
    public boolean isFacingAway(Face face) {
-      Tuple3 vertex0 = adjustForViewAndPerspective(face.getVertex(0), _viewTransform);
-      Tuple3 vertex1 = adjustForViewAndPerspective(face.getVertex(1), _viewTransform);
-      Tuple3 vertex2 = adjustForViewAndPerspective(face.getVertex(2), _viewTransform);
+      Tuple3 vertex0 = adjustForViewAndPerspective(face.getVertex(0), viewTransform);
+      Tuple3 vertex1 = adjustForViewAndPerspective(face.getVertex(1), viewTransform);
+      Tuple3 vertex2 = adjustForViewAndPerspective(face.getVertex(2), viewTransform);
 
       Tuple3 s01 = vertex0.subtract(vertex1);
       Tuple3 s12 = vertex1.subtract(vertex2);
@@ -136,7 +136,7 @@ public class World3D
    }
    public synchronized Region getOutline() {
       Region region = new Region();
-      for (Model model : _data) {
+      for (Model model : data) {
          for (Face face : model.getColoredFaces()) {
             // don't draw faces that face away:
             if (isFacingAway(face)) {
@@ -145,10 +145,10 @@ public class World3D
             region.add(getPoints(face));
          }
       }
-      for (Face face : _shadows) {
+      for (Face face : shadows) {
          region.add(getPoints(face));
       }
-      _waitingTillGetOutlineIsCalled = false;
+      waitingTillGetOutlineIsCalled = false;
 
       return region;
    }
@@ -156,11 +156,11 @@ public class World3D
 
    private int[] getPoints(Face face) {
       int offset = 0; //(int) ((_scale * -3)/ 2);
-      int[] arry = new int[face._vertexCount * 2];
+      int[] arry = new int[face.vertexCount * 2];
       int i=0;
       //StringBuilder sb = new StringBuilder();
-      for (int v = 0 ; v<face._vertexCount ; v++) {
-         Tuple3 tuple = adjustForViewAndPerspective(face.getVertex(v), _viewTransform);
+      for (int v = 0; v<face.vertexCount; v++) {
+         Tuple3 tuple = adjustForViewAndPerspective(face.getVertex(v), viewTransform);
          arry[i++] = Math.round(tuple.getX()) - offset;
          arry[i++] = Math.round(tuple.getY()) - offset;
 //         sb.append("(").append(arry[i-2]).append(", ").append(arry[i-1]).append(") ");
@@ -185,28 +185,28 @@ public class World3D
       // Color the shadows first, they should always be farthest away:
       gc.setForeground(currentColor);
       gc.setBackground(currentColor);
-      for (Face face : _shadows) {
+      for (Face face : shadows) {
          int[] points = getPoints(face);
          gc.fillPolygon(points);
       }
 
       // Order the faces so we draw the farthest away faces first
       List<ColoredFace> facesNotFacingAway = new ArrayList<>();
-      for (Model model : _data) {
+      for (Model model : data) {
          facesNotFacingAway.addAll(model.getColoredFaces().stream()
                                         .filter(face -> !isFacingAway(face))
                                         .collect(Collectors.toList()));
       }
       facesNotFacingAway.sort((Comparator<Face>) (arg0, arg1) -> {
-         float center0 = (_viewTransform.multiply(arg0.getVertexCenter())).getZ();
-         float center1 = (_viewTransform.multiply(arg1.getVertexCenter())).getZ();
+         float center0 = (viewTransform.multiply(arg0.getVertexCenter())).getZ();
+         float center1 = (viewTransform.multiply(arg1.getVertexCenter())).getZ();
          return Float.compare(center0, center1);
       });
 
       // Then draw the faces:
       for (ColoredFace face : facesNotFacingAway) {
          Tuple3 normal = face.getCommonNormal();
-         float brightness = _lightSource.dotProduct(normal);
+         float brightness = lightSource.dotProduct(normal);
          brightness = (Math.max(0, brightness) * (LIGHTEST_COLOR - DARKEST_COLOR)) + DARKEST_COLOR;
 
          int[] points = getPoints(face);
@@ -261,28 +261,28 @@ public class World3D
          float textureHeight = 0;
          Tuple2 textureCoordOffsetX = getTextureCoord(face, points, x+1, y);
          if (textureCoordOffsetX != null) {
-            textureWidth  = (textureCoordOffsetX.getX() - textureCoordCenter.getX()) * _texture.getWidth();
+            textureWidth  = (textureCoordOffsetX.getX() - textureCoordCenter.getX()) * texture.getWidth();
          }
          else {
             textureCoordOffsetX = getTextureCoord(face, points, x-1, y);
             if (textureCoordOffsetX != null) {
-               textureWidth  = (textureCoordOffsetX.getX() - textureCoordCenter.getX()) * _texture.getWidth() * -1;
+               textureWidth  = (textureCoordOffsetX.getX() - textureCoordCenter.getX()) * texture.getWidth() * -1;
             }
          }
          Tuple2 textureCoordOffsetY = getTextureCoord(face, points, x, y+1);
          if (textureCoordOffsetY != null) {
-            textureHeight = (textureCoordOffsetY.getY() - textureCoordCenter.getY()) * _texture.getHeight();
+            textureHeight = (textureCoordOffsetY.getY() - textureCoordCenter.getY()) * texture.getHeight();
          }
          else {
             textureCoordOffsetY = getTextureCoord(face, points, x, y-1);
             if (textureCoordOffsetY != null) {
-               textureHeight = (textureCoordOffsetY.getY() - textureCoordCenter.getY()) * _texture.getHeight() * -1;
+               textureHeight = (textureCoordOffsetY.getY() - textureCoordCenter.getY()) * texture.getHeight() * -1;
             }
          }
-         int xt = Math.round(textureCoordCenter.getX() * _texture.getWidth());
-         int yt = Math.round(textureCoordCenter.getY() * _texture.getHeight());
-         if ((xt > 0) && (yt > 0) && (xt<_texture.getWidth()) && (yt<_texture.getHeight())) {
-            int textureRGB = _texture.getRGB( xt, yt) & 0x00ffffff;
+         int xt = Math.round(textureCoordCenter.getX() * texture.getWidth());
+         int yt = Math.round(textureCoordCenter.getY() * texture.getHeight());
+         if ((xt > 0) && (yt > 0) && (xt < texture.getWidth()) && (yt < texture.getHeight())) {
+            int textureRGB = texture.getRGB(xt, yt) & 0x00ffffff;
             if ((textureWidth > 1.0f) || (textureHeight > 1.0f)) {
                int red   = 0;
                int green = 0;
@@ -292,8 +292,8 @@ public class World3D
                float stepSizeY = Math.max(0.2f, Math.abs(textureHeight / 10));
                for (float x1 = 0-(textureWidth/2f) ; x1 < (textureWidth/2f) ; x1 += stepSizeX) {
                   for (float y1 = 0-(textureHeight/2f) ; y1 < (textureHeight/2f) ; y1 += stepSizeY) {
-                     if (((x1+xt) > 0) && ((y1+yt) > 0) && (Math.round(x1 + xt)<_texture.getWidth()) && (Math.round(y1+ yt)<_texture.getHeight())) {
-                        int textureRGB_ = _texture.getRGB( Math.round(x1 + xt), Math.round(y1 + yt)) & 0x00ffffff;
+                     if (((x1+xt) > 0) && ((y1+yt) > 0) && (Math.round(x1 + xt) < texture.getWidth()) && (Math.round(y1 + yt) < texture.getHeight())) {
+                        int textureRGB_ = texture.getRGB(Math.round(x1 + xt), Math.round(y1 + yt)) & 0x00ffffff;
                         red   += (textureRGB_ >> 16) & 0xFF;
                         green += (textureRGB_ >>  8) & 0xFF;
                         blue  += (textureRGB_      ) & 0xFF;
@@ -330,7 +330,7 @@ public class World3D
                                             points[0], points[1], points[2], points[3], points[4], points[5],
                                             face.getTexCoord(0), face.getTexCoord(1), face.getTexCoord(2));
       }
-      if (face._vertexCount == 4) {
+      if (face.vertexCount == 4) {
          if (isInside(points[4], points[5], points[6], points[7], points[0], points[1], x, y)) {
             return TextureMapper.getTextureMap(x, y,
                                                points[4], points[5], points[6], points[7], points[0], points[1],
@@ -340,9 +340,9 @@ public class World3D
       return null;
    }
 
-   final HashMap<Integer, HashMap<Float, Color>> _colorsByRgbBrightness = new HashMap<>();
+   final HashMap<Integer, HashMap<Float, Color>> colorsByRgbBrightness = new HashMap<>();
    private Color getColor(GC gc, int rgb, float brightness) {
-      HashMap<Float, Color> colorsByBrightness = _colorsByRgbBrightness.computeIfAbsent(rgb, k -> new HashMap<>());
+      HashMap<Float, Color> colorsByBrightness = colorsByRgbBrightness.computeIfAbsent(rgb, k -> new HashMap<>());
       Color color = colorsByBrightness.get(brightness);
       if (color == null) {
          color = new Color(gc.getDevice(),
@@ -353,10 +353,10 @@ public class World3D
       }
       return color;
    }
-   final HashMap<Integer, HashMap<Integer, HashMap<Integer, Color>>> _colorsByRGB = new HashMap<>();
+   final HashMap<Integer, HashMap<Integer, HashMap<Integer, Color>>> colorsByRGB = new HashMap<>();
 
    private void disposeColors() {
-      for (HashMap<Integer, HashMap<Integer, Color>> colorsByGB : _colorsByRGB.values()) {
+      for (HashMap<Integer, HashMap<Integer, Color>> colorsByGB : colorsByRGB.values()) {
          for (HashMap<Integer, Color> colorsByB : colorsByGB.values()) {
             for (Color color : colorsByB.values()) {
                color.dispose();
@@ -365,14 +365,14 @@ public class World3D
          }
          colorsByGB.clear();
       }
-      _colorsByRGB.clear();
-      for (HashMap<Float, Color> colorsByBrightness : _colorsByRgbBrightness.values()) {
+      colorsByRGB.clear();
+      for (HashMap<Float, Color> colorsByBrightness : colorsByRgbBrightness.values()) {
          for (Color color : colorsByBrightness.values()) {
             color.dispose();
          }
          colorsByBrightness.clear();
       }
-      _colorsByRgbBrightness.clear();
+      colorsByRgbBrightness.clear();
    }
 
    /* A utility function to calculate area of triangle formed by (x1, y1), (x2, y2) and (x3, y3) */

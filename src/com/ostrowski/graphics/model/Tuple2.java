@@ -8,9 +8,9 @@ package com.ostrowski.graphics.model;
  */
 public class Tuple2 implements Cloneable, Comparable<Tuple2> {
 	/** The x element in this tuple */
-	private final float _x;
+	private final float x;
 	/** The y element in this tuple */
-	private final float _y;
+	private final float y;
 
 	/**
 	 * Create a new Tuple of 2 elements
@@ -19,8 +19,8 @@ public class Tuple2 implements Cloneable, Comparable<Tuple2> {
 	 * @param y The Y element value
 	 */
 	public Tuple2(float x,float y) {
-		this._x = x;
-		this._y = y;
+		this.x = x;
+		this.y = y;
 	}
 
 	/**
@@ -29,7 +29,7 @@ public class Tuple2 implements Cloneable, Comparable<Tuple2> {
 	 * @return The X element value from this tuple
 	 */
 	public float getX() {
-		return _x;
+		return x;
 	}
 
 	/**
@@ -38,7 +38,7 @@ public class Tuple2 implements Cloneable, Comparable<Tuple2> {
 	 * @return The Y element value from this tuple
 	 */
 	public float getY() {
-		return _y;
+		return y;
 	}
 
    public Tuple2 add(float dx, float dy) {
@@ -75,7 +75,7 @@ public class Tuple2 implements Cloneable, Comparable<Tuple2> {
 
    @Override
    public Tuple2 clone() {
-      return new Tuple2(_x, _y);
+      return new Tuple2(x, y);
    }
 
    @Override
@@ -89,8 +89,8 @@ public class Tuple2 implements Cloneable, Comparable<Tuple2> {
    @Override
    public int compareTo(Tuple2 o) {
       int comp;
-      comp = compareAxis(_x, o._x, o); if (comp != 0) return comp;
-      comp = compareAxis(_y, o._y, o); if (comp != 0) return comp;
+      comp = compareAxis(x, o.x, o); if (comp != 0) return comp;
+      comp = compareAxis(y, o.y, o); if (comp != 0) return comp;
       return 0;
    }
 
