@@ -42,14 +42,14 @@ public class DieShell extends Thread implements PaintListener
 
    static {
       try {
-         DIE_MAP.put( 4, ObjLoader.loadObj("res/dice/d4.obj"));
-         DIE_MAP.put( 6, ObjLoader.loadObj("res/dice/d6.obj"));
-         DIE_MAP.put( 8, ObjLoader.loadObj("res/dice/d8.obj"));
-         DIE_MAP.put(10, ObjLoader.loadObj("res/dice/d10.obj"));
-         DIE_MAP.put(12, ObjLoader.loadObj("res/dice/d12.obj"));
-         DIE_MAP.put(99, ObjLoader.loadObj("res/dice/d99.obj"));
-         DIE_MAP.put(20, ObjLoader.loadObj("res/dice/d20.obj"));
-         TEXTURE = ObjLoader.loadImage("res/dice/diceMapLettersOnBlack.png");
+         DIE_MAP.put( 4, ObjLoader.loadObj("d4.obj"));
+         DIE_MAP.put( 6, ObjLoader.loadObj("d6.obj"));
+         DIE_MAP.put( 8, ObjLoader.loadObj("d8.obj"));
+         DIE_MAP.put(10, ObjLoader.loadObj("d10.obj"));
+         DIE_MAP.put(12, ObjLoader.loadObj("d12.obj"));
+         DIE_MAP.put(99, ObjLoader.loadObj("d99.obj"));
+         DIE_MAP.put(20, ObjLoader.loadObj("d20.obj"));
+         TEXTURE = ObjLoader.loadImage("diceMapLettersOnBlack.png");
       } catch (IOException e) {
          e.printStackTrace();
       }
