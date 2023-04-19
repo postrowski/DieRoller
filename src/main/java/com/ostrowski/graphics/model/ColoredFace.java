@@ -4,7 +4,7 @@ public class ColoredFace extends Face
 {
    private int colorRGB;
    public ColoredFace(Face base, int colorRGB) {
-      super(base.vertexCount);
+      super(base.vertexCount, base.getLabel());
       for (int i = 0; i<base.vertexCount; i++) {
          addPoint(base.verts[i].clone(), base.texs[i].clone(), base.norms[i].clone());
       }
@@ -17,5 +17,10 @@ public class ColoredFace extends Face
 
    public void setColor(int newColorRGB) {
       colorRGB = newColorRGB;
+   }
+
+   public String toString() {
+      return "Color" + super.toString() +
+             ", colorRGB=" + (colorRGB >> 16) + "" + ((colorRGB >> 8) & 255) + "" + (colorRGB & 255);
    }
 }

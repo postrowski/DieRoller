@@ -1,85 +1,91 @@
 package com.ostrowski.graphics.model;
 
 
+import java.util.Arrays;
 
 /**
  * A single face defined on a model. This is a series of points
  * each with a position, normal and texture coordinate
  */
 public class Face implements Cloneable {
-    /** The vertices making up this face */
-    protected final Tuple3[] verts;
-    /** The normals making up this face */
-    protected final Tuple3[] norms;
-    /** The texture coordinates making up this face */
-    protected final Tuple2[] texs;
-    /** The number of points */
-    protected       int      points = 0;
-	 public    final int      vertexCount;
+   /** The vertices making up this face */
+   protected final Tuple3[] verts;
+   /** The normals making up this face */
+   protected final Tuple3[] norms;
+   /** The texture coordinates making up this face */
+   protected final Tuple2[] texs;
+   private final String     label;
+   /** The number of points */
+   protected       int      points = 0;
+   public    final int      vertexCount;
 
-	/**
-	 * Create a new face
-	 *
-	 * @param points The number of points building up this face
-	 */
-	public Face(int points) {
-	   vertexCount = points;
-		verts = new Tuple3[points];
-		norms = new Tuple3[points];
-		texs = new Tuple2[points];
-	}
+   /**
+    * Create a new face
+    *
+    * @param points The number of points building up this face
+    */
+   public Face(int points, String label) {
+      vertexCount = points;
+      verts = new Tuple3[points];
+      norms = new Tuple3[points];
+      texs = new Tuple2[points];
+      this.label = label;
+   }
 
-	/**
-	 * Add a single point to this face
-	 *
-	 * @param vert The vertex location information for the point
-	 * @param tex The texture coordinate information for the point
-	 * @param norm the normal information for the point
-	 */
-	public void addPoint(Tuple3 vert, Tuple2 tex, Tuple3 norm) {
-		verts[points] = vert;
-		texs[points]  = tex;
-		norms[points] = norm;
+   /**
+    * Add a single point to this face
+    *
+    * @param vert The vertex location information for the point
+    * @param tex The texture coordinate information for the point
+    * @param norm the normal information for the point
+    */
+   public void addPoint(Tuple3 vert, Tuple2 tex, Tuple3 norm) {
+      verts[points] = vert;
+      texs[points]  = tex;
+      norms[points] = norm;
 
-		points++;
-	}
+      points++;
+   }
 
-	public Tuple3 getCommonNormal() {
+   public Tuple3 getCommonNormal() {
       Tuple3 s01 = verts[0].subtract(verts[1]);
       Tuple3 s12 = verts[1].subtract(verts[2]);
       return s01.crossProduct(s12).normalize();
-	}
+   }
 
-	/**
-	 * Get the vertex information for a specified point within this face.
-	 *
-	 * @param p The index of the vertex information to retrieve
-	 * @return The vertex information from this face
-	 */
-	public Tuple3 getVertex(int p) {
-		return verts[p];
-	}
+   /**
+    * Get the vertex information for a specified point within this face.
+    *
+    * @param p The index of the vertex information to retrieve
+    * @return The vertex information from this face
+    */
+   public Tuple3 getVertex(int p) {
+      return verts[p];
+   }
 
-	/**
-	 * Get the texture information for a specified point within this face.
-	 *
-	 * @param p The index of the texture information to retrieve
-	 * @return The texture information from this face
-	 */
-	public Tuple2 getTexCoord(int p) {
-		return texs[p];
-	}
+   /**
+    * Get the texture information for a specified point within this face.
+    *
+    * @param p The index of the texture information to retrieve
+    * @return The texture information from this face
+    */
+   public Tuple2 getTexCoord(int p) {
+      return texs[p];
+   }
 
-	/**
-	 * Get the normal information for a specified point within this face.
-	 *
-	 * @param p The index of the normal information to retrieve
-	 * @return The normal information from this face
-	 */
-	public Tuple3 getNormal(int p) {
-		return norms[p];
-	}
+   /**
+    * Get the normal information for a specified point within this face.
+    *
+    * @param p The index of the normal information to retrieve
+    * @return The normal information from this face
+    */
+   public Tuple3 getNormal(int p) {
+      return norms[p];
+   }
 
+   public String getLabel() {
+      return label;
+   }
    /**
     * change the order of the points on the triangle from A->B->C    to A->C->B
     *                           or the quadrilateral from A->B->C->D to A->D->C->B
@@ -103,7 +109,7 @@ public class Face implements Cloneable {
 //         Tuple2 tempT2 = texs[sourceIndex];
 //         texs[sourceIndex] = texs[destIndex];
 //         texs[destIndex] = tempT2;
-         Face face = new Face(vertexCount);
+         Face face = new Face(vertexCount, label);
          face.addPoint(verts[0], texs[0], norms[0]);
          if (verts.length == 3) {
             face.addPoint(verts[2], texs[2], norms[2]);
@@ -155,11 +161,23 @@ public class Face implements Cloneable {
 
    @Override
    public Face clone() {
-      Face dup = new Face(points);
+      Face dup = new Face(points, label);
       for (int i = 0; i < points; i++) {
          //dup.addPoint(verts[i], texs[i], norms[i]);
          dup.addPoint(verts[i].clone(), texs[i].clone(), norms[i].clone());
       }
       return dup;
+   }
+
+   @Override
+   public String toString() {
+      return this.getClass().getName() + "{" +
+             "label='" + label + '\'' +
+             ", verts=" + Arrays.toString(verts) +
+             ", norms=" + Arrays.toString(norms) +
+             ", texs=" + Arrays.toString(texs) +
+             ", points=" + points +
+             ", vertexCount=" + vertexCount +
+             '}';
    }
 }

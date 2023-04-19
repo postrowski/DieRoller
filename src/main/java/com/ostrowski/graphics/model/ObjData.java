@@ -50,6 +50,7 @@ public class ObjData implements Cloneable
    public ObjData(InputStream in) throws IOException {
       // read the file line by line adding the data to the appropriate
       // list held locally
+      int faceIndex = 1;
       try (BufferedReader reader = new BufferedReader(new InputStreamReader(in)))
       {
          // The texture coordinates that have been read from the file
@@ -84,7 +85,7 @@ public class ObjData implements Cloneable
             }
             else if (line.startsWith("f")) {
                // readFace(...) assumes that the vertex data is already loaded into verts
-               Face face = readFace(line, texCoords);
+               Face face = readFace(line, texCoords, faceIndex++);
                faces.add(face);
             }
          }
@@ -255,7 +256,7 @@ public class ObjData implements Cloneable
     * @return The face data extracted from the line
     * @throws IOException Indicates a failure to process the line
     */
-   protected Face readFace(String line, List<Tuple2> texCoords) throws IOException {
+   protected Face readFace(String line, List<Tuple2> texCoords, int faceIndex) throws IOException {
       StringTokenizer points = new StringTokenizer(line, " ");
 
       points.nextToken();
@@ -268,7 +269,7 @@ public class ObjData implements Cloneable
       }
 
       // create a new face data to populate with the values from the line
-      Face face = new Face(faceCount);
+      Face face = new Face(faceCount, String.valueOf(faceIndex));
 
       try {
          // for each line we're going to read 3 bits of data, the index

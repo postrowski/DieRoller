@@ -74,7 +74,7 @@ public class Die extends Model
          int facesToFind = data.getFaceCount() / sides;
          for (ColoredFace face : faces) {
             float upness = face.getCommonNormal().dotProduct(UP_VECTOR);
-            if (upness > 0.98f) {
+            if (upness > 0.95f) {
                face.setColor(resultRGB);
                if (--facesToFind == 0) {
                   break;

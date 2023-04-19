@@ -26,12 +26,20 @@ public class Model
       if (baseRGB != null) {
          this.baseRGB = baseRGB;
       }
+      Tuple3 rotationalAxis;
+      do {
+         rotationalAxis = new Tuple3((float) (Math.random() * 1000f - 500f),
+                                         (float) (Math.random() * 1000f - 500f),
+                                         (float) (Math.random() * 1000f - 500f));
+      } while (rotationalAxis.unitVector().dotProduct(UP_VECTOR) > .7);
+
+      Tuple3 velocity = new Tuple3((float) (Math.random() * 100f - 50f),
+                                   (float) (Math.random() * 200f - 100f),
+                                   (float) (Math.random() * 200f + 300f));
       frame = new Frame(new Tuple3(600, 300, 300),  // location
-                        new Tuple3(0, 30, 420),    // velocity, pixels per second
+                        velocity,    // velocity, pixels per second
                         //new Tuple3(-350, 460, 50));   // unit vector is axis, magnitude is degrees per second
-                        new Tuple3((float)(Math.random() * 1000f -500f),
-                                    (float)(Math.random() * 1000f -500f),
-                                    (float)(Math.random() * 1000f -500f)));   // unit vector is axis, magnitude is degrees per second
+                        rotationalAxis);   // unit vector is axis, magnitude is degrees per second
 
       System.out.println("New object. rotationalAxis: " + frame.rotationalAxis.toString());
       this.data.scale(scale, scale, scale);
@@ -50,28 +58,26 @@ public class Model
 
       List<Tuple3> pointsBelowFloor = new ArrayList<>();
       List<Tuple3> pointsNearFloor = new ArrayList<>();
-      Tuple3 centerMassBelowFloor = new Tuple3(0,0,0);
       float lowestZ = 1000;
-      StringBuilder sb = new StringBuilder();
-      int v = 0;
+//      StringBuilder sb = new StringBuilder();
+//      int v = 0;
       for (Tuple3 vertex : data.getVerts()) {
-         if (sb.length() > 0) {
-            sb.append("\n");
-         }
+//         if (sb.length() > 0) {
+//            sb.append("\n");
+//         }
          //Tuple3 positionedVertex = vertex.applyTransformation(_orientationTransform).add(_location);
          Tuple3 positionedVertex = nextFrame.positionVertex(vertex);
          float z = positionedVertex.getZ();
-         sb.append(" v").append(v++)
-           .append(":{").append(positionedVertex.getX())
-           .append(",").append(positionedVertex.getY())
-           .append(",").append(z).append("}");
+//         sb.append(" v").append(v++)
+//           .append(":{").append(positionedVertex.getX())
+//           .append(",").append(positionedVertex.getY())
+//           .append(",").append(z).append("}");
 
          if (z < (floorZValue +2)) {
             pointsNearFloor.add(positionedVertex);
          }
          if (z < floorZValue) {
             pointsBelowFloor.add(positionedVertex);
-            centerMassBelowFloor = centerMassBelowFloor.add(positionedVertex);
          }
          if (z < lowestZ) {
             lowestZ = z;
@@ -94,6 +100,10 @@ public class Model
       }
 
       //System.out.println(sb.toString());
+      Tuple3 centerMassBelowFloor = new Tuple3(0,0,0);
+      for (Tuple3 point : pointsBelowFloor) {
+         centerMassBelowFloor = centerMassBelowFloor.add(point);
+      }
       centerMassBelowFloor = centerMassBelowFloor.divide(pointsBelowFloor.size());
 
       // move the object to the floor level
@@ -131,29 +141,30 @@ public class Model
       Tuple3 pointToCenter = positionedCenterMass.subtract(positionedCenterMassAtFloor);
       // Acceleration is expressed in pixels per second / second, and
       // torque is expressed in radians per second,
-      // so we need to multiple the crossProduct by elapsedTimeSecond, and also convert the torque into Radians.
+      // so we need to multiply the crossProduct by elapsedTimeSecond, and also convert the torque into Radians.
       // we can do this in one step with the call to multiply((float)(Math.toRadians(elapsedTimeInSeconds)))
       Tuple3 newTorque = pointToCenter.crossProduct(acceleration)
-                                      .multiply((float)(elapsedTimeInSeconds / rotationalInteria));
+                                      .multiply(elapsedTimeInSeconds * 4 / rotationalInteria);
       // TODO: Since the torque is applied off-center, should there be a lateral force as well?
 
 
       // TODO: any existing lateral movement should be converted into rotational momentum by friction
 
 
-      double percentBounce = pointToCenter.unitVector().dotProduct(UP_VECTOR);
+      float percentBounce = pointToCenter.unitVector().dotProduct(UP_VECTOR);
+      percentBounce *= .6;
 
       // If the object is rotating, some of that rotation should be turned in lateral movement:
       Tuple3 nextFramePositionedCenterMassAtFloor = positionedCenterMassAtFloor.subtract(frame.location)
                                                                                .applyTransformation(frame.orientationTransform)
                                                                                .add(frame.location);
       Tuple3 movementOfCenterMassAtFloor = nextFramePositionedCenterMassAtFloor.subtract(positionedCenterMassAtFloor);
-
-      Tuple3 newVelocity = new Tuple3(velocity.getX() - movementOfCenterMassAtFloor.getX() * friction * -20,
-                                      velocity.getY() - movementOfCenterMassAtFloor.getY() * friction * -20,
-                                      (- velocity.getZ() * (float)percentBounce));
+      //movementOfCenterMassAtFloor = movementOfCenterMassAtFloor.multiply(1-percentBounce*percentBounce);
+      Tuple3 newVelocity = new Tuple3(velocity.getX() * .70f - movementOfCenterMassAtFloor.getX(),
+                                      velocity.getY() * .70f - movementOfCenterMassAtFloor.getY(),
+                                      (- velocity.getZ() * percentBounce));
               //.multiply(dampeningFactor);
-
+System.out.println("newVelocity: " + newVelocity);
       Frame newFrame = frame.setVelocity(newVelocity);
       Tuple3 newRotationalAxis = addRotationalVectors(newFrame.rotationalAxis.multiply(1 - friction), newTorque);
       return newFrame.setRotationalAxis(newRotationalAxis);

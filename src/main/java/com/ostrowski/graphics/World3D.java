@@ -107,7 +107,7 @@ public class World3D
                   Tuple3 pointOnFloor = lightPerZ.multiply(distanceToFloor).add(vertex);
                   pointsOnFloor.add(pointOnFloor);
                }
-               Face shadow = new Face(pointsOnFloor.size());
+               Face shadow = new Face(pointsOnFloor.size(), "shadow" + face.getLabel());
                for (Tuple3 point : pointsOnFloor) {
                   shadow.addPoint(point, shadowTextureVertex, shadowNormal);
                }
@@ -216,14 +216,15 @@ public class World3D
          Color baseColor = getColor(gc, baseRGB, brightness);
          gc.setForeground(baseColor);
          gc.setBackground(baseColor);
+         currentColor = baseColor;
          gc.fillPolygon(points);
-         for (int y0 = Math.max(0, -bounds.y); y0 < bounds.height ; y0++) {
-            int y = y0 + bounds.y;
-            for (int x0 = Math.max(0, -bounds.x); x0 < bounds.width ; x0++) {
-               int x = x0 + bounds.x;
-               Color color = drawPointOfFace(gc, face, currentColor, baseRGB, brightness, points, x, y);
-               if (color != null) {
-                  currentColor = color;
+        for (int y0 = Math.max(0, -bounds.y); y0 < bounds.height; y0++) {
+           int y = y0 + bounds.y;
+           for (int x0 = Math.max(0, -bounds.x); x0 < bounds.width; x0++) {
+              int x = x0 + bounds.x;
+              Color color = drawPointOfFace(gc, face, currentColor, baseRGB, brightness, points, x, y);
+              if (color != null) {
+                 currentColor = color;
                }
             }
          }
